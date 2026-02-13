@@ -1,0 +1,3486 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickDesign — AI Kitchen Design Studio</title>
+    <meta name="description"
+        content="Transform your kitchen with AI-powered design visualization. Upload a photo and see your dream kitchen come to life.">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════
+           DESIGN SYSTEM — Dark Luxury + Glassmorphism
+           ═══════════════════════════════════════════════════ */
+        :root {
+            --bg-deep: #050508;
+            --bg-surface: #0c0c12;
+            --accent: #e74c4c;
+            --accent-soft: #ef6b6b;
+            --accent-glow: rgba(231, 76, 76, 0.35);
+            --accent-glow-intense: rgba(231, 76, 76, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-bg-hover: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.07);
+            --glass-border-hover: rgba(255, 255, 255, 0.14);
+            --text-primary: #f0ece4;
+            --text-secondary: rgba(240, 236, 228, 0.55);
+            --text-tertiary: rgba(240, 236, 228, 0.3);
+            --danger: #e74c4c;
+            --success: #4ce7a0;
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --shadow-ambient: 0 8px 40px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 40px var(--accent-glow);
+            --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+            --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           ANIMATED MESH GRADIENT BACKGROUND
+           ═══════════════════════════════════════════════════ */
+        .mesh-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .mesh-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.4;
+            will-change: transform;
+        }
+
+        .mesh-blob:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(231, 76, 76, 0.3), transparent 70%);
+            top: -20%;
+            left: -10%;
+            animation: meshFloat1 20s ease-in-out infinite;
+        }
+
+        .mesh-blob:nth-child(2) {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(120, 80, 200, 0.2), transparent 70%);
+            bottom: -15%;
+            right: -10%;
+            animation: meshFloat2 25s ease-in-out infinite;
+        }
+
+        .mesh-blob:nth-child(3) {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(231, 76, 76, 0.15), transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: meshFloat3 18s ease-in-out infinite;
+        }
+
+        @keyframes meshFloat1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(80px, 40px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-40px, 80px) scale(0.95);
+            }
+        }
+
+        @keyframes meshFloat2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(-60px, -40px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(40px, -60px) scale(0.9);
+            }
+        }
+
+        @keyframes meshFloat3 {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-40%, -60%) scale(1.15);
+            }
+        }
+
+        /* Grain texture overlay */
+        .grain {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* ═══════════════════════════════════════════════════
+           FLOATING PARTICLES
+           ═══════════════════════════════════════════════════ */
+        .particles {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           MAIN CONTAINER
+           ═══════════════════════════════════════════════════ */
+        .app-shell {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            /* max-width: 520px; -> Removed for full-width carousel */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            perspective: 1200px;
+        }
+
+        /* Brand header */
+        .brand {
+            width: 100%;
+            max-width: 800px;
+            /* Increased width to allow centering room */
+            margin: 0 auto;
+            padding: 3rem 0 1.5rem;
+            /* Increased top padding, added bottom padding */
+            display: flex;
+            justify-content: center;
+            /* CENTERED */
+            align-items: center;
+            gap: 1.5rem;
+            /* More gap */
+            flex-shrink: 0;
+            opacity: 0;
+            animation: fadeDown 1s var(--transition-smooth) 0.2s forwards;
+            text-align: left;
+            /* Keep text itself left-aligned relative to logo? or center? Flex handles this. */
+        }
+
+        .brand-logo {
+            width: 80px;
+            /* Larger */
+            height: 80px;
+            /* Larger */
+            object-fit: contain;
+            filter: drop-shadow(0 4px 12px rgba(231, 76, 76, 0.3));
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .brand h1 {
+            font-size: 2.2rem;
+            /* Larger */
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+
+        .brand-sub {
+            font-size: 0.85rem;
+            /* Larger */
+            letter-spacing: 3px;
+            color: var(--text-tertiary);
+            margin-top: 0.4rem;
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           VIEWS — State machine with animated transitions
+           ═══════════════════════════════════════════════════ */
+        .views-container {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            padding: 0;
+            /* Full bleed potential */
+        }
+
+        .view {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(30px) scale(0.92);
+            transition: opacity 0.7s var(--transition-smooth), transform 0.7s var(--transition-smooth), visibility 0s 0.7s;
+            will-change: transform, opacity;
+        }
+
+        .view.is-active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+            transform: translateY(0) scale(1);
+            transition: opacity 0.7s var(--transition-smooth), transform 0.7s var(--transition-smooth), visibility 0s 0s;
+        }
+
+        .view.is-exiting-left {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-60%) scale(0.88) rotateY(8deg);
+            pointer-events: none;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           UPLOAD VIEW
+           ═══════════════════════════════════════════════════ */
+        .upload-card {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(1.2);
+            -webkit-backdrop-filter: blur(24px) saturate(1.2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 3.5rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s var(--transition-smooth);
+            box-shadow: var(--shadow-ambient);
+        }
+
+        .upload-card::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: var(--radius-xl);
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(231, 76, 76, 0.3), transparent 50%, rgba(231, 76, 76, 0.1));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .upload-card:hover {
+            background: var(--glass-bg-hover);
+            border-color: var(--glass-border-hover);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-ambient), var(--shadow-glow);
+        }
+
+        .upload-card:hover::before {
+            opacity: 1;
+        }
+
+        .upload-card.is-dragging {
+            border-color: var(--accent) !important;
+            background: rgba(231, 76, 76, 0.05) !important;
+            box-shadow: var(--shadow-ambient), 0 0 60px var(--accent-glow);
+        }
+
+        .upload-card.is-uploading {
+            pointer-events: none;
+        }
+
+        .upload-icon-wrap {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            background: rgba(231, 76, 76, 0.08);
+            border: 1px solid rgba(231, 76, 76, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s var(--transition-smooth);
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        .upload-card:hover .upload-icon-wrap {
+            background: rgba(231, 76, 76, 0.12);
+            border-color: rgba(231, 76, 76, 0.3);
+            transform: scale(1.05);
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(231, 76, 76, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(231, 76, 76, 0.06);
+            }
+        }
+
+        .upload-icon-wrap svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--accent);
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .upload-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .upload-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .upload-formats {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .format-tag {
+            font-size: 0.65rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* Upload progress ring */
+        .upload-progress {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 5, 8, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-xl);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .upload-progress.is-visible {
+            opacity: 1;
+        }
+
+        .progress-ring {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 1.2rem;
+        }
+
+        .progress-ring circle {
+            fill: none;
+            stroke-width: 3;
+        }
+
+        .progress-ring .ring-bg {
+            stroke: rgba(231, 76, 76, 0.1);
+        }
+
+        .progress-ring .ring-fill {
+            stroke: var(--accent);
+            stroke-dasharray: 157;
+            stroke-dashoffset: 157;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 0.5s ease;
+            filter: drop-shadow(0 0 6px var(--accent-glow));
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           PREFERENCES VIEW
+           ═══════════════════════════════════════════════════ */
+        .pref-card {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(1.2);
+            -webkit-backdrop-filter: blur(24px) saturate(1.2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-ambient);
+        }
+
+        /* Image thumbnail */
+        .thumb-preview {
+            width: 100%;
+            height: 140px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            position: relative;
+            border: 1px solid var(--glass-border);
+        }
+
+        .thumb-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .thumb-preview .thumb-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(5, 5, 8, 0.6), transparent 60%);
+            display: flex;
+            align-items: flex-end;
+            padding: 0.8rem;
+        }
+
+        .thumb-overlay span {
+            font-size: 0.7rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+
+        .pref-title {
+            font-size: 1.3rem;
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 1.8rem;
+            color: var(--text-primary);
+        }
+
+        .pref-title span {
+            background: linear-gradient(135deg, var(--text-primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.7rem;
+        }
+
+        /* Segmented material control */
+        .segment-control {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--glass-border);
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .segment-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: calc(var(--radius-sm) - 2px);
+            cursor: pointer;
+            transition: all 0.35s var(--transition-smooth);
+            position: relative;
+            z-index: 1;
+        }
+
+        .segment-btn.is-selected {
+            background: rgba(231, 76, 76, 0.12);
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(231, 76, 76, 0.08);
+        }
+
+        .segment-btn:hover:not(.is-selected) {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        /* Color picker styled */
+        .color-picker-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .color-picker-row:focus-within {
+            border-color: rgba(231, 76, 76, 0.3);
+        }
+
+        .color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--glass-border);
+            overflow: hidden;
+            flex-shrink: 0;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .color-swatch:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .color-swatch input[type="color"] {
+            position: absolute;
+            inset: -8px;
+            width: calc(100% + 16px);
+            height: calc(100% + 16px);
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .color-hex {
+            font-family: 'Outfit', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            flex: 1;
+        }
+
+        /* Generate button */
+        .btn-generate {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--accent), #c62828);
+            color: #1a1500;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s var(--transition-smooth);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-generate::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px var(--accent-glow-intense);
+        }
+
+        .btn-generate:hover::before {
+            left: 100%;
+        }
+
+        .btn-generate:active {
+            transform: scale(0.98);
+        }
+
+        /* Notes textarea */
+        .notes-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            padding: 0.8rem 1rem;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            min-height: 60px;
+        }
+
+        .notes-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .notes-input:focus {
+            border-color: rgba(231, 76, 76, 0.3);
+            box-shadow: 0 0 15px rgba(231, 76, 76, 0.08);
+        }
+
+        /* ═══════════════════════════════════════════════════
+           LOADING VIEW — Magical Experience
+           ═══════════════════════════════════════════════════ */
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        /* Morphing orb */
+        .morph-orb-container {
+            width: 140px;
+            height: 140px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .morph-orb {
+            width: 80px;
+            height: 80px;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            background: linear-gradient(135deg, var(--accent), #b71c1c, var(--accent-soft));
+            background-size: 200% 200%;
+            animation: morphShape 8s ease-in-out infinite, morphGradient 4s ease-in-out infinite;
+            filter: blur(0.5px);
+            box-shadow: 0 0 60px var(--accent-glow), 0 0 120px rgba(231, 76, 76, 0.15);
+        }
+
+        .morph-orb-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(231, 76, 76, 0.15);
+            animation: ringPulse 3s ease-in-out infinite;
+        }
+
+        .morph-orb-ring:nth-child(2) {
+            inset: -15px;
+            animation-delay: 0.5s;
+            border-color: rgba(231, 76, 76, 0.08);
+        }
+
+        .morph-orb-ring:nth-child(3) {
+            inset: -30px;
+            animation-delay: 1s;
+            border-color: rgba(231, 76, 76, 0.04);
+        }
+
+        @keyframes morphShape {
+            0% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+
+            25% {
+                border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
+            }
+
+            50% {
+                border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
+            }
+
+            75% {
+                border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
+            }
+
+            100% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+        }
+
+        @keyframes morphGradient {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes ringPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.08);
+                opacity: 1;
+            }
+        }
+
+        /* Status messages */
+        .loading-status {
+            text-align: center;
+        }
+
+        .loading-status-text {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+            transition: opacity 0.4s ease;
+            min-height: 1.5em;
+        }
+
+        .loading-sub {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-top: 0.6rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Progress bar */
+        .loading-progress {
+            width: 200px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* ════════ CAROUSEL REVAMP ════════ */
+        .carousel-view {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #050505;
+        }
+
+        .carousel-scene {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+            overflow: hidden;
+            padding-bottom: 120px;
+            /* Space for controls */
+        }
+
+        .carousel-stage {
+            position: relative;
+            width: 95vw;
+            /* Fully edge-to-edge on large screens */
+            height: 60vh;
+            /* Slightly taller for the wide layout */
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .carousel-card {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* border-radius: 12px; REMOVED - moved to inner */
+            /* overflow: hidden; REMOVED - let inner handle it */
+            /* box-shadow: ...; REMOVED */
+            /* background: #111; REMOVED */
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-origin: center center;
+            opacity: 0;
+            pointer-events: none;
+            /* border: ...; REMOVED */
+
+            /* ADDED FOR CENTERING: */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            max-height: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #111;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .carousel-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain !important;
+            /* FORCE aspect ratio */
+            display: block;
+            border-radius: 12px;
+        }
+
+        /* States */
+        .carousel-card.is-center {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1);
+            z-index: 10;
+            pointer-events: auto;
+            /* box-shadow moved to inner */
+        }
+
+        .carousel-card.is-center .carousel-card-inner {
+            box-shadow: 0 0 0 1px rgba(231, 76, 76, 0.3), 0 30px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .carousel-card.is-left {
+            opacity: 0.4;
+            transform: translate3d(-60%, 0, -200px) scale(0.85) rotateY(15deg);
+            z-index: 5;
+            filter: blur(2px) grayscale(0.5);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .carousel-card.is-right {
+            opacity: 0.4;
+            transform: translate3d(60%, 0, -200px) scale(0.85) rotateY(-15deg);
+            z-index: 5;
+            filter: blur(2px) grayscale(0.5);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .carousel-card.is-hidden-left {
+            transform: translate3d(-100%, 0, -400px);
+            opacity: 0;
+        }
+
+        .carousel-card.is-hidden-right {
+            transform: translate3d(100%, 0, -400px);
+            opacity: 0;
+        }
+
+        /* Controls Area */
+        /* ════════ CAROUSEL DOCK POLISH ════════ */
+        .controls-dock {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(5, 5, 8, 0.95), rgba(5, 5, 8, 0.85));
+            backdrop-filter: blur(40px) saturate(1.8);
+            -webkit-backdrop-filter: blur(40px) saturate(1.8);
+            border-top: 1px solid rgba(231, 76, 76, 0.15);
+            padding: 1.5rem 2.5rem;
+            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .dock-content-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .refine-input-group {
+            flex: 1;
+            max-width: 700px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50px;
+            padding: 4px;
+            padding-left: 20px;
+            transition: all 0.4s var(--transition-smooth);
+        }
+
+        .refine-input-group:focus-within {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(231, 76, 76, 0.3);
+            box-shadow: 0 0 25px rgba(231, 76, 76, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .refine-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 300;
+            padding: 12px 10px;
+            outline: none;
+            line-height: 1;
+        }
+
+        .refine-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .btn-refine-action {
+            background: linear-gradient(135deg, var(--accent), #c62828);
+            color: #1a1500;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s var(--transition-bounce);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(231, 76, 76, 0.2);
+        }
+
+        .btn-refine-action:hover {
+            transform: scale(1.05) translateY(-1px);
+            box-shadow: 0 6px 25px rgba(231, 76, 76, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .dock-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .dock-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-size: 0.8rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .dock-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        #btn-download.dock-btn {
+            border-color: rgba(231, 76, 76, 0.2);
+            color: var(--accent);
+        }
+
+        #btn-download.dock-btn:hover {
+            background: rgba(231, 76, 76, 0.08);
+            border-color: var(--accent);
+        }
+
+        /* Nav Overlays */
+        .nav-overlay {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(5, 5, 8, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.4s var(--transition-smooth);
+            pointer-events: auto;
+        }
+
+        .nav-overlay:hover {
+            background: rgba(231, 76, 76, 0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-50%) scale(1.15);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .nav-overlay:disabled {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .nav-overlay.prev {
+            left: 5vw;
+        }
+
+        .nav-overlay.next {
+            right: 5vw;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           BACK BUTTON
+           ═══════════════════════════════════════════════════ */
+        .btn-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            border-radius: var(--radius-sm);
+        }
+
+        .btn-back svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-secondary);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.3s ease, transform 0.3s ease;
+        }
+
+        .btn-back:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .btn-back:hover svg {
+            stroke: var(--text-primary);
+            transform: translateX(-3px);
+        }
+
+        /* ═══════════════════════════════════════════════════
+           STEP INDICATOR
+           ═══════════════════════════════════════════════════ */
+        .step-indicator {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            padding: 1rem 0 0.5rem;
+            flex-shrink: 0;
+            opacity: 0;
+            animation: fadeDown 1s var(--transition-smooth) 0.4s forwards;
+        }
+
+        .step-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-tertiary);
+            transition: all 0.5s var(--transition-smooth);
+        }
+
+        .step-dot.is-current {
+            width: 24px;
+            border-radius: 3px;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .step-dot.is-done {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-soft);
+        }
+
+        .step-line {
+            width: 16px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        /* ═══════════════════════════════════════════════════
+           ERROR STATE
+           ═══════════════════════════════════════════════════ */
+        .error-message {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(231, 76, 76, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(231, 76, 76, 0.2);
+            border-radius: var(--radius-md);
+            padding: 0.8rem 1.5rem;
+            color: #ff8a8a;
+            font-size: 0.85rem;
+            z-index: 100;
+            transition: transform 0.5s var(--transition-bounce);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .error-message.is-visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ═══════════════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════════════ */
+        @media (max-width: 560px) {
+            .app-shell {
+                max-width: 100%;
+            }
+
+            .views-container {
+                padding: 1rem;
+            }
+
+            .view {
+                width: calc(100% - 2rem);
+            }
+
+            .upload-card {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .pref-card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Landings Options (Split View) */
+        .landing-options {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            z-index: 10;
+        }
+
+        .option-card {
+            flex: 1;
+            background: rgba(10, 12, 16, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-card:hover {
+            background: rgba(20, 22, 28, 0.8);
+            border-color: var(--accent);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .option-card:hover .option-icon {
+            color: var(--accent);
+            transform: scale(1.1);
+        }
+
+        .option-icon {
+            width: 64px;
+            height: 64px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 1.5rem;
+            transition: all 0.4s ease;
+        }
+
+        .option-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .option-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-width: 280px;
+        }
+
+        @media (max-width: 768px) {
+            .landing-options {
+                flex-direction: column;
+                padding: 1rem;
+            }
+        }
+
+        /* ════════ MARKUP VIEW ════════ */
+        .overlay-view {
+            background: rgba(5, 5, 8, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            display: flex;
+            /* Override default block if needed, but view has flex */
+        }
+
+        .markup-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .markup-header {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .markup-title {
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .btn-text {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            /* Prevent scrolling while drawing */
+        }
+
+        #markup-bg-img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            /* object-fit: contain; REMOVED to insure element size == visual size */
+            pointer-events: none;
+            user-select: none;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            /* Visual separation */
+        }
+
+        #markup-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            pointer-events: auto;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .markup-toolbar {
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        }
+
+        .color-options {
+            display: flex;
+            gap: 12px;
+        }
+
+        .color-opt {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .color-opt.active {
+            transform: scale(1.2);
+            border-color: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .tool-btn.active {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .tool-separator {
+            width: 1px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 4px;
+        }
+
+        /* Pen Icon for Carousel */
+        .card-action-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(5, 5, 8, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+        }
+
+        .carousel-card.is-center .card-action-btn {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .card-action-btn:hover {
+            background: var(--accent);
+            color: #000;
+            transform: scale(1.1);
+        }
+
+        .card-action-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* 3D Button */
+        .btn-3d {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            height: 44px;
+            padding: 0 20px;
+            border-radius: 22px;
+            background: rgba(5, 5, 8, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .carousel-card.is-center .btn-3d {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .btn-3d:hover {
+            background: var(--accent);
+            color: #000;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn-3d svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           KITCHEN SKETCHER STYLES
+           ═══════════════════════════════════════════════════ */
+        :root {
+            /* Sketcher Specific Variables (Prefixed sk-) */
+            --sk-bg0: #05060a;
+            --sk-bg1: #090b12;
+            --sk-panel: rgba(255, 255, 255, .06);
+            --sk-panel2: rgba(255, 255, 255, .045);
+            --sk-stroke: rgba(255, 255, 255, .93);
+            --sk-muted: rgba(255, 255, 255, .62);
+            --sk-muted2: rgba(255, 255, 255, .36);
+
+            --sk-accent: #e53935;
+            /* red */
+            --sk-accent2: #ff5a5f;
+            /* lighter red */
+            --sk-danger: #ff3b30;
+            --sk-warn: #ffd166;
+
+            --sk-shadow: 0 18px 60px rgba(0, 0, 0, .55);
+            --sk-ring: 0 0 0 3px rgba(229, 57, 53, .28);
+            --sk-radius: 16px;
+            --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        #view-sketch {
+            background:
+                radial-gradient(1200px 900px at 20% 10%, rgba(229, 57, 53, .14) 0%, transparent 58%),
+                radial-gradient(900px 700px at 90% 20%, rgba(255, 90, 95, .10) 0%, transparent 58%),
+                linear-gradient(180deg, var(--sk-bg0), var(--sk-bg1));
+            overflow: hidden;
+            font-family: var(--sans);
+            color: var(--sk-stroke);
+        }
+
+        #view-sketch canvas#c {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Top app bar */
+        .sk-topbar {
+            position: absolute;
+            left: 14px;
+            right: 14px;
+            top: 14px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .sk-cluster {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .sk-pill {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .045));
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 999px;
+            padding: 10px 12px;
+            box-shadow: var(--sk-shadow);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .sk-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .045));
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: var(--sk-shadow);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .sk-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 99px;
+            background:
+                radial-gradient(circle at 30% 30%, #fff 0%, rgba(255, 255, 255, .22) 35%, rgba(255, 255, 255, 0) 60%),
+                linear-gradient(180deg, var(--sk-accent2), var(--sk-accent));
+            box-shadow: 0 0 0 4px rgba(229, 57, 53, .16), 0 0 22px rgba(229, 57, 53, .35);
+        }
+
+        .sk-title {
+            font-weight: 800;
+            letter-spacing: .2px;
+        }
+
+        /* Buttons */
+        .sk-btn {
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .05);
+            color: var(--sk-stroke);
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+            user-select: none;
+            font-family: var(--sans);
+        }
+
+        .sk-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, .07);
+            border-color: rgba(255, 255, 255, .18);
+        }
+
+        .sk-btn:active {
+            transform: translateY(0px) scale(.99);
+        }
+
+        .sk-btn[aria-pressed="true"] {
+            outline: none;
+            box-shadow: var(--sk-ring);
+            border-color: rgba(229, 57, 53, .55);
+            background: rgba(229, 57, 53, .14);
+        }
+
+        .sk-btn .k {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--sk-muted);
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .22);
+        }
+
+        .sk-btn-danger {
+            border-color: rgba(255, 59, 48, .45);
+            background: rgba(255, 59, 48, .14);
+            box-shadow: 0 0 0 1px rgba(255, 59, 48, .08) inset;
+        }
+
+        .sk-btn-danger:hover {
+            border-color: rgba(255, 59, 48, .62);
+            background: rgba(255, 59, 48, .18);
+        }
+
+        /* Action/Primary Button for Sketcher */
+        .sk-btn-primary {
+            border-color: var(--accent);
+            background: rgba(231, 76, 76, 0.15);
+            box-shadow: 0 0 0 1px rgba(231, 76, 76, 0.2) inset;
+            color: #fff;
+        }
+
+        .sk-btn-primary:hover {
+            background: rgba(231, 76, 76, 0.25);
+            border-color: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .sk-sep {
+            width: 1px;
+            height: 34px;
+            background: rgba(255, 255, 255, .10);
+            margin: 0 2px;
+        }
+
+        /* Menu */
+        .sk-menuWrap {
+            position: relative;
+        }
+
+        .sk-menuBtn {
+            width: 44px;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .sk-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 10px);
+            width: 240px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(18, 18, 24, .88), rgba(10, 10, 14, .78));
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: var(--sk-shadow);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            overflow: hidden;
+            transform-origin: top right;
+            transform: scale(.98);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform .12s ease, opacity .12s ease;
+        }
+
+        .sk-menu.open {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .sk-menuItem {
+            width: 100%;
+            padding: 12px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border: 0;
+            background: transparent;
+            color: var(--sk-stroke);
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .sk-menuItem:hover {
+            background: rgba(255, 255, 255, .06);
+        }
+
+        .sk-menuItem .meta {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--sk-muted2);
+        }
+
+        .sk-menuHr {
+            height: 1px;
+            background: rgba(255, 255, 255, .10);
+            margin: 6px 0;
+        }
+
+        /* Panel */
+        .sk-panel {
+            position: absolute;
+            right: 14px;
+            top: 74px;
+            width: 340px;
+            max-height: calc(100vh - 92px);
+            overflow: auto;
+            padding: 12px;
+            border-radius: var(--sk-radius);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .045));
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: var(--sk-shadow);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 9;
+        }
+
+        .sk-panel h3 {
+            margin: 6px 6px 10px;
+            font-size: 14px;
+            letter-spacing: .2px;
+        }
+
+        .sk-group {
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(0, 0, 0, .18);
+            border-radius: 14px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .sk-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 6px;
+        }
+
+        .sk-row label {
+            font-size: 13px;
+            color: var(--sk-muted);
+        }
+
+        .sk-row .val {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--sk-stroke);
+            opacity: .9;
+        }
+
+        .sk-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sk-switch {
+            width: 44px;
+            height: 26px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .14);
+            background: rgba(255, 255, 255, .05);
+            position: relative;
+            cursor: pointer;
+            transition: background .15s ease, border-color .15s ease;
+        }
+
+        .sk-switch::after {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .88);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, .35);
+            transition: transform .15s ease, background .15s ease;
+        }
+
+        .sk-switch.on {
+            background: rgba(229, 57, 53, .20);
+            border-color: rgba(229, 57, 53, .55);
+        }
+
+        .sk-switch.on::after {
+            transform: translateX(18px);
+            background: #fff;
+        }
+
+        .sk-range {
+            width: 160px;
+        }
+
+        .sk-number {
+            width: 92px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .22);
+            color: var(--sk-stroke);
+            font-family: var(--mono);
+            outline: none;
+        }
+
+        .sk-select {
+            width: 170px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .22);
+            color: var(--sk-stroke);
+            outline: none;
+        }
+
+        .sk-hint {
+            font-size: 12px;
+            color: var(--sk-muted2);
+            line-height: 1.45;
+            padding: 0 6px 6px;
+        }
+
+        /* Status */
+        .sk-status {
+            position: absolute;
+            left: 14px;
+            bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .045));
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: var(--sk-shadow);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .sk-status .badge {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .20);
+            color: rgba(255, 255, 255, .72);
+        }
+
+        .sk-status .text {
+            font-size: 12px;
+            color: var(--sk-muted);
+        }
+
+        .sk-status .strong {
+            color: var(--sk-stroke);
+        }
+
+        /* Modal */
+        .sk-modalBackdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, .55);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 18px;
+        }
+
+        .sk-modalBackdrop.open {
+            display: flex;
+        }
+
+        .sk-modal {
+            width: min(720px, 100%);
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(18, 18, 24, .92), rgba(10, 10, 14, .86));
+            border: 1px solid rgba(255, 255, 255, .12);
+            box-shadow: var(--sk-shadow);
+            overflow: hidden;
+        }
+
+        .sk-modalHeader {
+            padding: 14px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, .10);
+        }
+
+        .sk-modalHeader .h {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            letter-spacing: .2px;
+        }
+
+        .sk-modalHeader .chip {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(229, 57, 53, .35);
+            background: rgba(229, 57, 53, .12);
+            color: rgba(255, 255, 255, .86);
+        }
+
+        .sk-modalBody {
+            padding: 14px;
+            color: rgba(255, 255, 255, .86);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .sk-kbd {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(0, 0, 0, .25);
+            color: rgba(255, 255, 255, .88);
+            display: inline-block;
+            margin: 0 6px 0 0;
+        }
+
+        .sk-li {
+            padding: 10px 10px;
+            border: 1px solid rgba(255, 255, 255, .10);
+            background: rgba(255, 255, 255, .04);
+            border-radius: 14px;
+            margin: 8px 0;
+        }
+
+        /* New Landing Options Styling */
+        .landing-options {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            justify-content: center;
+        }
+
+        .option-card {
+            flex: 1;
+            background: rgba(20, 20, 25, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+            text-align: center;
+        }
+
+        .option-card:hover {
+            background: rgba(20, 20, 25, 0.8);
+            border-color: var(--accent);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6), 0 0 30px var(--accent-glow);
+        }
+
+        .option-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .option-card:hover .option-icon {
+            opacity: 1;
+            transform: scale(1.15) rotate(-5deg);
+            color: var(--accent);
+            filter: drop-shadow(0 0 12px var(--accent-glow));
+        }
+
+        .option-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .option-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Animated mesh gradient background -->
+    <div class="mesh-bg">
+        <div class="mesh-blob"></div>
+        <div class="mesh-blob"></div>
+        <div class="mesh-blob"></div>
+    </div>
+    <div class="grain"></div>
+
+    <!-- Floating particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- App Shell -->
+    <div class="app-shell">
+        <header class="brand">
+            <img src="https://whmbrguzumyatnslzfsq.supabase.co/storage/v1/object/public/Client%20Logos/modernhome.png"
+                alt="Modern Home Logo" class="brand-logo">
+            <div class="brand-text">
+                <h1>QuickDesign</h1>
+                <div class="brand-sub">AI Kitchen Studio</div>
+            </div>
+        </header>
+
+        <div class="step-indicator" id="step-indicator">
+            <div class="step-dot is-current" data-step="0"></div>
+            <div class="step-line"></div>
+            <div class="step-dot" data-step="1"></div>
+            <div class="step-line"></div>
+            <div class="step-dot" data-step="2"></div>
+            <div class="step-line"></div>
+            <div class="step-dot" data-step="3"></div>
+        </div>
+
+        <div class="views-container">
+
+            <!-- ▸ UPLOAD VIEW -->
+            <!-- ▸ UPLOAD VIEW (Split Options) -->
+            <div id="view-upload" class="view is-active">
+                <div class="landing-options">
+                    <!-- Option 1: Upload -->
+                    <div class="option-card" id="btn-opt-upload">
+                        <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <div class="option-title">Upload Photo</div>
+                        <div class="option-desc">Transform an existing photo of your kitchen using AI.</div>
+                        <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp"
+                            style="display:none;">
+                    </div>
+
+                    <!-- Option 2: Sketch -->
+                    <div class="option-card" id="btn-opt-sketch">
+                        <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                            <path d="M2 2l7.586 7.586"></path>
+                        </svg>
+                        <div class="option-title">Sketch Layout</div>
+                        <div class="option-desc">Draw your floor plan from scratch with our pro tools.</div>
+                    </div>
+                </div>
+
+                <!-- Hidden upload progress (re-used) -->
+                <div class="upload-progress" id="upload-progress"
+                    style="display:none; position:fixed; inset:0; z-index:50; background:rgba(0,0,0,0.8); flex-direction:column; align-items:center; justify-content:center;">
+                    <svg class="progress-ring" viewBox="0 0 56 56">
+                        <circle class="ring-bg" cx="28" cy="28" r="25" />
+                        <circle class="ring-fill" id="progress-circle" cx="28" cy="28" r="25" />
+                    </svg>
+                    <div class="progress-text">UPLOADING</div>
+                </div>
+            </div>
+
+            <!-- ▸ PREFERENCES VIEW -->
+            <div id="view-preferences" class="view">
+                <button class="btn-back" id="btn-back-upload">
+                    <svg viewBox="0 0 24 24">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    Change Photo
+                </button>
+                <div class="pref-card">
+                    <div class="thumb-preview" id="thumb-preview">
+                        <img id="thumb-img" src="" alt="Your kitchen">
+                        <div class="thumb-overlay">
+                            <span>Your Kitchen</span>
+                        </div>
+                    </div>
+
+                    <h2 class="pref-title"><span>Customize Your Design</span></h2>
+
+                    <div class="form-group">
+                        <label class="form-label">Material</label>
+                        <div class="segment-control">
+                            <button class="segment-btn is-selected" data-value="PVC" id="seg-pvc">PVC</button>
+                            <button class="segment-btn" data-value="HPL" id="seg-hpl">HPL</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Accent Color</label>
+                        <div class="color-picker-row">
+                            <div class="color-swatch" id="color-swatch">
+                                <input type="color" id="color-picker" value="#e74c4c">
+                            </div>
+                            <span class="color-hex" id="color-hex">#E74C4C</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea class="notes-input" id="notes-input"
+                            placeholder="e.g. modern style, white marble countertop…" rows="3"></textarea>
+                    </div>
+
+                    <button class="btn-generate" id="btn-generate">
+                        Generate Design
+                    </button>
+                </div>
+            </div>
+
+            <!-- ▸ LOADING VIEW -->
+            <div id="view-loading" class="view">
+                <div class="loading-content">
+                    <div class="morph-orb-container">
+                        <div class="morph-orb-ring"></div>
+                        <div class="morph-orb-ring"></div>
+                        <div class="morph-orb-ring"></div>
+                        <div class="morph-orb"></div>
+                    </div>
+                    <div class="loading-status">
+                        <div class="loading-status-text" id="loading-text">Analyzing your kitchen…</div>
+                        <div class="loading-sub">This may take a moment</div>
+                    </div>
+                    <div class="loading-progress">
+                        <div class="loading-progress-fill" id="loading-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ▸ RESULT VIEW -->
+            <!-- ▸ RESULT VIEW (CAROUSEL) -->
+            <div id="view-result" class="view carousel-view">
+                <div class="carousel-scene">
+                    <div class="carousel-stage" id="carousel-stage">
+                        <!-- Cards injected by JS -->
+                    </div>
+
+                    <!-- Abs Nav Buttons -->
+                    <button class="nav-overlay prev" id="nav-prev">←</button>
+                    <button class="nav-overlay next" id="nav-next">→</button>
+
+                    <!-- Particle Overlay (Fixed) -->
+                    <canvas id="particle-canvas"
+                        style="position: absolute; pointer-events: none; width: 100%; height: 100%; top:0; left:0; z-index: 20;"></canvas>
+                </div>
+
+                <!-- Bottom Dock -->
+                <div class="controls-dock">
+                    <div class="dock-content-wrapper">
+                        <div class="refine-input-group">
+                            <input type="text" class="refine-input" id="refine-input"
+                                placeholder="Refine this design... (e.g. 'Make it darker')">
+                            <button class="btn-refine-action" id="btn-refine">
+                                <span>✨ Refine</span>
+                            </button>
+                        </div>
+
+                        <div class="dock-actions">
+                            <a class="dock-btn" id="btn-download" href="#" target="_blank" download>Download</a>
+                            <button class="dock-btn" id="btn-reset">New Project</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ▸ MARKUP VIEW (Overlay) -->
+            <div id="view-markup" class="view overlay-view">
+                <div class="markup-container">
+                    <div class="markup-header">
+                        <button class="btn-icon" id="btn-close-markup">
+                            <svg viewBox="0 0 24 24">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                        <div class="markup-title">Draw Feedback</div>
+                        <button class="btn-text" id="btn-save-markup">Done</button>
+                    </div>
+
+                    <div class="canvas-wrapper" id="canvas-wrapper">
+                        <!-- Canvas and Image will be injected here -->
+                        <img id="markup-bg-img" alt="Background">
+                        <canvas id="markup-canvas"></canvas>
+                    </div>
+
+                    <div class="markup-toolbar">
+                        <div class="color-options">
+                            <div class="color-opt active" data-color="#E74C4C" style="background:#E74C4C"></div>
+                            <div class="color-opt" data-color="#E74C4C" style="background:#E74C4C"></div>
+                            <div class="color-opt" data-color="#FFFFFF" style="background:#FFFFFF"></div>
+                            <div class="color-opt" data-color="#4CE7A0" style="background:#4CE7A0"></div>
+                        </div>
+                        <div class="tool-options">
+                            <!-- Shapes -->
+                            <button class="btn-icon tool-btn" data-tool="select" title="Select / Move">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+                                </svg>
+                            </button>
+                            <button class="btn-icon tool-btn active" data-tool="freehand" title="Freehand">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                                    <path d="M2 2l7.586 7.586"></path>
+                                    <circle cx="11" cy="11" r="2"></circle>
+                                </svg>
+                            </button>
+                            <button class="btn-icon tool-btn" data-tool="rect" title="Rectangle">
+                                <svg viewBox="0 0 24 24">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                </svg>
+                            </button>
+                            <button class="btn-icon tool-btn" data-tool="circle" title="Circle">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                </svg>
+                            </button>
+                            <button class="btn-icon tool-btn" data-tool="arrow" title="Arrow">
+                                <svg viewBox="0 0 24 24">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+
+                            <div class="tool-separator"
+                                style="width:1px; height:24px; background:rgba(255,255,255,0.1); margin:0 8px;"></div>
+
+                            <button class="btn-icon" id="btn-undo" title="Undo">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M3 7v6h6"></path>
+                                    <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+                                </svg>
+                            </button>
+                            <button class="btn-icon" id="btn-clear" title="Clear All">
+                                <svg viewBox="0 0 24 24">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Error toast -->
+    <div class="error-message" id="error-toast"></div>
+
+    <script>
+        // ═══════════════════════════════════════════════════
+        // CONFIGURATION
+        // ═══════════════════════════════════════════════════
+        const CONFIG = {
+            SUPABASE_URL: 'https://whmbrguzumyatnslzfsq.supabase.co',
+            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndobWJyZ3V6dW15YXRuc2x6ZnNxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTM1MTY4OSwiZXhwIjoyMDY0OTI3Njg5fQ.h-YbToBRx8WTW5KCk2IAYnmuhob3oiARGsnn61HwYQc',
+            BUCKET: 'TREE',
+            WEBHOOK_INITIAL: 'https://primary-production-9e01d.up.railway.app/webhook/29e167bd-02a0-40ab-a500-4b682a849023',
+            WEBHOOK_REFINE: 'https://primary-production-9e01d.up.railway.app/webhook/e8e36fd8-dddd-4b5c-9394-136e58897039',
+            WEBHOOK_SKETCH: 'https://primary-production-9e01d.up.railway.app/webhook/740a9f78-2074-43f2-82aa-f74cdc0fc87d',
+        };
+
+        const LOADING_MESSAGES = [
+            'Analyzing your kitchen…',
+            'Detecting surfaces & layout…',
+            'Selecting materials…',
+            'Applying color palette…',
+            'Rendering your design…',
+            'Adding finishing touches…',
+            'Almost there…',
+        ];
+
+        // ═══════════════════════════════════════════════════
+        // INIT SUPABASE
+        // ═══════════════════════════════════════════════════
+        let sb;
+        try {
+            sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+        } catch (e) {
+            console.error('Supabase init error:', e);
+        }
+
+        // ═══════════════════════════════════════════════════
+        // DOM REFS
+        // ═══════════════════════════════════════════════════
+        const $ = (s) => document.querySelector(s);
+        const views = {
+            upload: $('#view-upload'),
+            prefs: $('#view-preferences'),
+            loading: $('#view-loading'),
+            result: $('#view-result'),
+        };
+        const els = {
+            // dropZone removed
+            fileInput: $('#file-input'),
+            uploadProgress: $('#upload-progress'),
+            progressCircle: $('#progress-circle'),
+            thumbImg: $('#thumb-img'),
+            colorPicker: $('#color-picker'),
+            colorHex: $('#color-hex'),
+            btnGenerate: $('#btn-generate'),
+            loadingText: $('#loading-text'),
+            loadingFill: $('#loading-fill'),
+
+            // Carousel Elements
+            carouselStage: $('#carousel-stage'),
+            navPrev: $('#nav-prev'),
+            navNext: $('#nav-next'),
+            refineInput: $('#refine-input'),
+            btnRefine: $('#btn-refine'),
+            btnDownload: $('#btn-download'),
+            btnReset: $('#btn-reset'),
+            particleCanvas: $('#particle-canvas'),
+
+            errorToast: $('#error-toast'),
+            stepIndicator: $('#step-indicator')
+        };
+
+        // ═══════════════════════════════════════════════════
+        // STATE
+        // ═══════════════════════════════════════════════════
+        let state = {
+            uploadedUrl: '',
+            localPreviewUrl: '',
+            material: 'PVC',
+            color: '#e74c4c',
+            history: [],
+            historyIndex: -1,
+            isSketch: false
+        };
+
+        // ═══════════════════════════════════════════════════
+        // VIEW TRANSITIONS
+        // ═══════════════════════════════════════════════════
+        function resetAllViews() {
+            Object.values(views).forEach(v => {
+                if (v && v.classList) {
+                    v.classList.remove('is-active', 'is-exiting-left');
+                }
+            });
+        }
+        // Initialize View (Check for sketch return)
+        const urlParams = new URLSearchParams(window.location.search);
+        let sketchUrl = urlParams.get('sketch_url');
+
+        // Check Local Storage Fallback
+        if (!sketchUrl) {
+            const stored = localStorage.getItem('nanobanana_sketch_url');
+            if (stored) {
+                console.log('Found sketch in localStorage:', stored);
+                sketchUrl = stored;
+                // Clear it so it doesn't persist on reload
+                localStorage.removeItem('nanobanana_sketch_url');
+            }
+        }
+
+        console.log("Checking sketchUrl:", sketchUrl);
+
+        // DEBUG: ENABLED
+        // alert('Script running. Search: ' + window.location.search);
+        // if (sketchUrl) alert('Found Sketch URL: ' + sketchUrl);
+        // else alert('No sketch_url found');
+
+        if (sketchUrl) {
+            console.log('Restoring sketch:', sketchUrl);
+            state.uploadedUrl = sketchUrl;
+            state.localPreviewUrl = sketchUrl;
+            state.isSketch = true; // Mark as sketch
+            els.thumbImg.src = sketchUrl;
+
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            views.upload.classList.remove('is-active');
+            views.prefs.classList.add('is-active');
+            updateSteps(2);
+        } else {
+            views.upload.classList.add('is-active');
+        }
+
+
+        function transitionTo(fromView, toView) {
+            resetAllViews();
+            fromView.classList.add('is-exiting-left');
+            setTimeout(() => {
+                toView.classList.add('is-active');
+            }, 150);
+        }
+
+        function updateSteps(step) {
+            const steps = els.stepIndicator.querySelectorAll('.step-dot');
+            steps.forEach((s, i) => {
+                if (i < step) {
+                    s.classList.add('is-done');
+                    s.classList.remove('is-current');
+                } else if (i === step) {
+                    s.classList.add('is-current');
+                    s.classList.remove('is-done');
+                } else {
+                    s.classList.remove('is-current', 'is-done');
+                }
+            });
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        // ═══════════════════════════════════════════════════
+        // CAROUSEL LOGIC
+        // ═══════════════════════════════════════════════════
+        function createCarouselCard(item, index) {
+            const card = document.createElement('div');
+            card.className = 'carousel-card';
+
+            // Wrapper: Shrink-wraps the image exactly
+            const wrapper = document.createElement('div');
+            wrapper.className = 'carousel-card-inner';
+
+            const img = document.createElement('img');
+            img.src = item.url;
+            img.style.objectFit = 'contain';
+
+            wrapper.appendChild(img);
+            card.appendChild(wrapper);
+
+            // Add Markup Button (Always present, visibility handled by CSS)
+            const btnMarkup = document.createElement('div');
+            btnMarkup.className = 'card-action-btn';
+            btnMarkup.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`;
+            btnMarkup.title = "Draw Feedback";
+            btnMarkup.onclick = (e) => {
+                e.stopPropagation();
+                openMarkup(item.url);
+            };
+            wrapper.appendChild(btnMarkup);
+
+            // Add 3D Button
+            const btn3D = document.createElement('div');
+            btn3D.className = 'btn-3d';
+            btn3D.innerHTML = `
+                <svg viewBox="0 0 24 24"><path d="M12 3l10 6v6l-10 6L2 15V9l10-6z"/><path d="M12 21V9"/><path d="M2 9l10-6 10 6"/></svg>
+                <span>3D View</span>
+            `;
+            btn3D.title = "View in 3D";
+            btn3D.onclick = (e) => {
+                e.stopPropagation();
+                handle3DClick(item, btn3D);
+            };
+            wrapper.appendChild(btn3D);
+
+            // Click to nav (Card level)
+            card.onclick = (e) => {
+                // Ignore if clicking the action button
+                if (e.target.closest('.card-action-btn')) return;
+
+                // Find current index of THIS card in the DOM (in case it shifted, though usually static order)
+                // Better: we can rely on state.history finding this item, or just use the index passed 
+                // BUT: index passed is closure. If we rely on order, we should re-calc index.
+                // Simpler: Just find index in state.history by URL? Or store index on card dataset.
+                const myIndex = parseInt(card.dataset.index);
+                if (myIndex !== state.historyIndex) {
+                    state.historyIndex = myIndex;
+                    updateCarousel();
+                }
+            };
+
+            return card;
+        }
+
+        function updateCardMarkup(card, item) {
+            const wrapper = card.querySelector('.carousel-card-inner');
+            const img = wrapper.querySelector('img');
+
+            // Clear existing markup canvas
+            const existing = wrapper.querySelector('.markup-preview');
+            if (existing) existing.remove();
+
+            if (item.markup && item.markup.length > 0) {
+                const canvas = document.createElement('canvas');
+                canvas.className = 'markup-preview';
+                canvas.style.position = 'absolute';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.objectFit = 'contain';
+                canvas.style.pointerEvents = 'none';
+                canvas.style.zIndex = '2';
+
+                const render = () => {
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+
+                    item.markup.forEach(obj => {
+                        ctx.beginPath();
+                        ctx.strokeStyle = obj.color;
+                        ctx.lineWidth = 4;
+                        ctx.fillStyle = obj.color;
+
+                        if (obj.type === 'freehand') {
+                            if (obj.points.length > 0) {
+                                ctx.moveTo(obj.points[0].x, obj.points[0].y);
+                                for (let j = 1; j < obj.points.length; j++) {
+                                    ctx.lineTo(obj.points[j].x, obj.points[j].y);
+                                }
+                                ctx.stroke();
+                            }
+                        } else if (obj.type === 'rect') {
+                            ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                        } else if (obj.type === 'circle') {
+                            ctx.beginPath();
+                            ctx.ellipse(obj.x + obj.w / 2, obj.y + obj.h / 2, Math.abs(obj.w / 2), Math.abs(obj.h / 2), 0, 0, 2 * Math.PI);
+                            ctx.stroke();
+                        } else if (obj.type === 'arrow') {
+                            // Arrow logic similar to before
+                            const headlen = 15;
+                            const endX = obj.x + obj.w;
+                            const endY = obj.y + obj.h;
+                            const angle = Math.atan2(endY - obj.y, endX - obj.x);
+                            ctx.moveTo(obj.x, obj.y);
+                            ctx.lineTo(endX, endY);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(endX, endY);
+                            ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
+                            ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
+                            ctx.fill();
+                        }
+                    });
+                };
+
+                if (img.complete && img.naturalWidth > 0) render();
+                else img.onload = render;
+
+                wrapper.appendChild(canvas);
+            }
+        }
+
+        function updateCarousel() {
+            const stage = els.carouselStage;
+
+            // 1. Sync DOM (Append New Items)
+            while (stage.children.length < state.history.length) {
+                const index = stage.children.length;
+                const item = state.history[index];
+                const card = createCarouselCard(item, index);
+                card.dataset.index = index; // Store index for click handler
+                stage.appendChild(card);
+            }
+
+            // 2. Update Classes & Content
+            Array.from(stage.children).forEach((card, index) => {
+                const item = state.history[index];
+
+                // Update Index (in case history shifted, though unlikely in this append-only model)
+                // But generally safe to update
+                card.dataset.index = index;
+
+                // Reset Classes
+                card.className = 'carousel-card'; // Clears is-center, is-left, etc.
+
+                // Apply Position Classes
+                if (index === state.historyIndex) card.classList.add('is-center');
+                else if (index === state.historyIndex - 1) card.classList.add('is-left');
+                else if (index === state.historyIndex + 1) card.classList.add('is-right');
+                else if (index < state.historyIndex) card.classList.add('is-hidden-left');
+                else card.classList.add('is-hidden-right');
+
+                // Refresh Markup (changes often)
+                updateCardMarkup(card, item);
+            });
+
+            // Update Nav Buttons
+            els.navPrev.disabled = state.historyIndex <= 0;
+            els.navNext.disabled = state.historyIndex >= state.history.length - 1;
+
+            // Update Download Link
+            const currentItem = state.history[state.historyIndex];
+            if (currentItem) {
+                els.btnDownload.href = currentItem.url;
+            }
+        }
+
+        // Nav Click Handlers
+        els.navPrev.addEventListener('click', () => {
+            if (state.historyIndex > 0) {
+                state.historyIndex--;
+                updateCarousel();
+            }
+        });
+
+        els.navNext.addEventListener('click', () => {
+            if (state.historyIndex < state.history.length - 1) {
+                state.historyIndex++;
+                updateCarousel();
+            }
+        });
+
+        // ═══════════════════════════════════════════════════
+        // PARTICLE EFFECT (Simplified/Cleaned)
+        // ═══════════════════════════════════════════════════
+        let particleAnimationId = null;
+        function spawnParticles() {
+            const canvas = els.particleCanvas;
+            const ctx = canvas.getContext('2d');
+
+            // Full screen overlay
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            if (particleAnimationId) cancelAnimationFrame(particleAnimationId);
+
+            let particles = [];
+            for (let i = 0; i < 200; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    size: Math.random() * 4 + 1,
+                    alpha: 1,
+                    color: `hsl(${40 + Math.random() * 15}, 80%, 60%)`
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let alive = false;
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= 0.02;
+                    p.size *= 0.95;
+                    if (p.alpha > 0) {
+                        alive = true;
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = p.alpha;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                if (alive) particleAnimationId = requestAnimationFrame(animate);
+                else ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            animate();
+        }
+
+        // UPLOAD & INPUTS
+        // ═══════════════════════════════════════════════════
+        const btnOptUpload = $('#btn-opt-upload');
+        const fileInp = $('#file-input');
+
+        btnOptUpload.addEventListener('click', () => fileInp.click());
+        fileInp.addEventListener('click', e => e.stopPropagation());
+        fileInp.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+        // Drag & Drop
+        // We can attach drag drop to the view or the card
+        const dropZone = views.upload;
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('is-dragging'); });
+        dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.classList.remove('is-dragging'); });
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('is-dragging');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        async function handleFile(file) {
+            if (!file.type.match(/^image\/(jpeg|png|webp)$/)) return showError('Please upload a JPG, PNG, or WEBP.');
+            if (file.size > 15 * 1024 * 1024) return showError('File too large (Max 15MB).');
+
+            els.uploadProgress.classList.add('is-visible');
+            animateProgressRing(0);
+
+            state.localPreviewUrl = URL.createObjectURL(file);
+            els.thumbImg.src = state.localPreviewUrl;
+
+            try {
+                const progressInterval = setInterval(() => {
+                    const current = parseFloat(els.progressCircle.style.strokeDashoffset || 157);
+                    if (current > 50) animateProgressRing(((157 - (current - 5)) / 157) * 100);
+                }, 200);
+
+                const ext = file.name.split('.').pop() || 'png';
+                const safeName = `kitchen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${ext}`;
+
+                const { data, error } = await sb.storage.from(CONFIG.BUCKET).upload(safeName, file, { cacheControl: '3600', upsert: false });
+                clearInterval(progressInterval);
+                if (error) throw error;
+
+                animateProgressRing(100);
+                const { data: { publicUrl } } = sb.storage.from(CONFIG.BUCKET).getPublicUrl(safeName);
+                state.uploadedUrl = publicUrl;
+
+                await sleep(400);
+                els.uploadProgress.classList.remove('is-visible');
+
+                // Add redirect listener again just in case (though it should be static now)
+                // Actually no, we attached it statically.
+
+                transitionTo(views.upload, views.prefs);
+                updateSteps(2);
+
+            } catch (err) {
+                console.error(err);
+                showError('Upload failed.');
+                els.uploadProgress.classList.remove('is-visible');
+            }
+        }
+
+        function animateProgressRing(percent) {
+            els.progressCircle.style.strokeDashoffset = 157 - (percent / 100) * 157;
+        }
+
+        document.querySelectorAll('.segment-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('is-selected'));
+                btn.classList.add('is-selected');
+                state.material = btn.dataset.value;
+            });
+        });
+
+        els.colorPicker.addEventListener('input', e => {
+            state.color = e.target.value;
+            els.colorHex.textContent = e.target.value.toUpperCase();
+        });
+
+        // ═══════════════════════════════════════════════════
+        // GENERATION LOGIC
+        // ═══════════════════════════════════════════════════
+        els.btnGenerate.addEventListener('click', () => processDesign(false));
+        els.btnRefine.addEventListener('click', () => processDesign(true));
+        els.refineInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') processDesign(true);
+        });
+
+        async function processDesign(isRefine) {
+            let userNotes = '';
+
+            if (isRefine) {
+                userNotes = els.refineInput.value.trim();
+                // Allow empty for re-roll, but generally encourage prompt
+                if (!userNotes) return showError('Please describe your changes.');
+
+                els.btnRefine.innerHTML = '<span>⏳ Refining...</span>';
+                els.btnRefine.disabled = true;
+                spawnParticles(); // Trigger effect on start
+            } else {
+                userNotes = $('#notes-input').value.trim();
+                transitionTo(views.prefs, views.loading);
+                updateSteps(3);
+                startLoadingAnimation();
+            }
+
+            try {
+                // Determine endpoint: Refine -> Refine Hook, Sketch -> Sketch Hook, Photo -> Initial Hook
+                const endpoint = isRefine
+                    ? CONFIG.WEBHOOK_REFINE
+                    : (state.isSketch ? CONFIG.WEBHOOK_SKETCH : CONFIG.WEBHOOK_INITIAL);
+
+                let sourceImage = isRefine
+                    ? state.history[state.historyIndex].url
+                    : state.uploadedUrl;
+
+                // Check for deferred markup upload
+                if (isRefine) {
+                    els.btnRefine.innerHTML = '<span>⏳ Uploading Feedback...</span>';
+                    try {
+                        sourceImage = await uploadMarkupAndGetUrl(sourceImage);
+                    } catch (e) {
+                        console.error("Markup upload failed", e);
+                        // Fallback to original image if markup fails? Or stop? 
+                        // Let's stop and warn
+                        throw new Error("Failed to upload markup: " + e.message);
+                    }
+                    els.btnRefine.innerHTML = '<span>⏳ Refining...</span>';
+                }
+
+                // Payload Fix: Refine = Text Only
+                const preferencesObj = isRefine
+                    ? { notes: userNotes, prompt: userNotes }
+                    : { material: state.material, color: state.color, notes: userNotes };
+
+                const params = new URLSearchParams();
+                params.append('link', sourceImage);
+                params.append('preferences', JSON.stringify(preferencesObj));
+
+                const finalUrl = `${endpoint}?${params.toString()}`;
+
+                const response = await fetch(finalUrl, { method: 'GET' });
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+                const text = await response.text();
+                let resultUrl = text.trim();
+                try {
+                    const json = JSON.parse(text);
+                    resultUrl = json.response || json.url || json.link || json.output || json.image || resultUrl;
+                } catch (_) { }
+
+                if (!resultUrl || !resultUrl.startsWith('http')) throw new Error('Invalid response');
+
+                // Success
+                clearInterval(progressInterval);
+                els.loadingFill.style.width = '100%';
+
+                if (!isRefine) {
+                    await sleep(800);
+                    clearInterval(msgInterval);
+                    stopLoadingAnimation();
+                }
+
+                // Add to history
+                // NON-DESTRUCTIVE: Append to end even if we went back
+                // if (state.historyIndex < state.history.length - 1) {
+                //     state.history = state.history.slice(0, state.historyIndex + 1);
+                // }
+                state.history.push({ url: resultUrl, note: userNotes });
+                state.historyIndex = state.history.length - 1;
+
+                // Update UI
+                updateCarousel();
+                spawnParticles(); // Magic Reveal
+
+                if (isRefine) {
+                    els.refineInput.value = '';
+                    els.btnRefine.innerHTML = '<span>✨ Refine</span>';
+                    els.btnRefine.disabled = false;
+                } else {
+                    transitionTo(views.loading, views.result);
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError('Generation failed: ' + err.message);
+                if (isRefine) {
+                    els.btnRefine.innerHTML = '<span>✨ Refine</span>';
+                    els.btnRefine.disabled = false;
+                } else {
+                    goToUpload();
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════
+        // HELPERS
+        // ═══════════════════════════════════════════════════
+        let msgInterval, progressInterval;
+        function startLoadingAnimation() {
+            let msgIndex = 0;
+            els.loadingText.textContent = LOADING_MESSAGES[0];
+            msgInterval = setInterval(() => {
+                msgIndex = (msgIndex + 1) % LOADING_MESSAGES.length;
+                els.loadingText.textContent = LOADING_MESSAGES[msgIndex];
+            }, 2500);
+
+            els.loadingFill.style.width = '0%';
+            let p = 0;
+            progressInterval = setInterval(() => {
+                p += Math.random() * 5 + 2;
+                if (p > 90) p = 90;
+                els.loadingFill.style.width = p + '%';
+            }, 800);
+        }
+
+        function stopLoadingAnimation() {
+            clearInterval(msgInterval);
+            clearInterval(progressInterval);
+            els.loadingFill.style.width = '100%';
+        }
+
+        function showError(msg) {
+            els.errorToast.textContent = msg;
+            els.errorToast.classList.add('is-visible');
+            setTimeout(() => els.errorToast.classList.remove('is-visible'), 5000);
+        }
+
+        function goToUpload() {
+            state.uploadedUrl = '';
+            state.history = [];
+            state.historyIndex = -1;
+            $('#notes-input').value = '';
+            $('#refine-input').value = '';
+            resetAllViews();
+            views.upload.classList.add('is-active');
+            updateSteps(1);
+        }
+
+        els.btnReset.addEventListener('click', goToUpload);
+        $('#btn-back-upload').addEventListener('click', goToUpload);
+
+
+        $('#btn-opt-sketch').addEventListener('click', () => {
+            window.location.href = 'sketch.html';
+        });
+
+        // ═══════════════════════════════════════════════════
+        // 3D VIEW LOGIC
+        // ═══════════════════════════════════════════════════
+        async function handle3DClick(item, btnElement) {
+            // 1. Check Cache
+            if (item.threeDUrl) {
+                console.log("Opening cached 3D link:", item.threeDUrl);
+                window.open(item.threeDUrl, '_blank');
+                return;
+            }
+
+            // 2. Loading State
+            const originalHTML = btnElement.innerHTML;
+            btnElement.innerHTML = '<span>⏳ Loading...</span>';
+            btnElement.style.pointerEvents = 'none';
+
+            try {
+                // 3. Fetch
+                const webhookUrl = 'https://primary-production-9e01d.up.railway.app/webhook/bc1aecdc-9b42-47c4-88fc-43e4bf97d7b4';
+                const targetUrl = `${webhookUrl}?link=${encodeURIComponent(item.url)}`;
+                console.log("Fetching 3D view from:", targetUrl);
+
+                const response = await fetch(targetUrl);
+                if (!response.ok) throw new Error(`Webhook error: ${response.status}`);
+
+                const data = await response.json();
+                console.log("3D Webhook response:", data);
+
+                const viewUrl = data['3dview'] || data['url'] || data['link'];
+
+                if (viewUrl) {
+                    // 4. Cache & Open
+                    item.threeDUrl = viewUrl;
+                    window.open(viewUrl, '_blank');
+                } else {
+                    throw new Error('No 3D link in response');
+                }
+
+            } catch (err) {
+                console.error("3D View Failed:", err);
+                showError('Could not generate 3D view.');
+            } finally {
+                // 5. Restore Button
+                // If success, maybe change text to "Open 3D"? 
+                // For now, keep it simple as requested: "reverts to 3D" implied, but caching handles next click.
+                // Actually, if we have a link, let's keep it looking like a button.
+                btnElement.innerHTML = originalHTML;
+                btnElement.style.pointerEvents = 'auto';
+            }
+        }
+
+
+        // ═══════════════════════════════════════════════════
+        // MARKUP LOGIC
+        // ═══════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════
+        // MARKUP LOGIC (Object Based)
+        // ═══════════════════════════════════════════════════
+        const markupCanvas = $('#markup-canvas');
+        const markupCtx = markupCanvas.getContext('2d');
+
+        let currentTool = 'freehand'; // Default to freehand for immediate drawing
+        let markupState = {
+            isDrawing: false,
+            startX: 0,
+            startY: 0,
+            objects: [], // { type, x, y, w, h, color, points[] }
+            selection: null, // index
+            currentColor: '#E74C4C',
+            history: [] // Array of objects[] states
+        };
+
+        // Initialize Markup
+        function openMarkup(imageUrl) {
+            const historyItem = state.history.find(h => h.url === imageUrl);
+            // Load existing markup if available
+            markupState.objects = historyItem && historyItem.markup ? JSON.parse(JSON.stringify(historyItem.markup)) : [];
+            markupState.selection = null;
+
+            // Set UI to match default tool
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-tool="freehand"]').classList.add('active');
+            currentTool = 'freehand';
+
+            const img = $('#markup-bg-img');
+            img.crossOrigin = 'anonymous';
+            img.src = imageUrl;
+
+            // Force display first so dimensions are calculable
+            $('#view-markup').style.display = 'flex';
+
+            img.onload = () => {
+                resizeCanvas();
+                renderCanvas();
+                $('#view-markup').classList.add('is-active');
+            };
+        }
+
+        function closeMarkup() {
+            // Save local state to history item without uploading
+            const currentImgSrc = $('#markup-bg-img').src;
+            const historyItem = state.history.find(h => h.url === currentImgSrc);
+            if (historyItem) {
+                historyItem.markup = JSON.parse(JSON.stringify(markupState.objects));
+            }
+
+            // Re-render carousel to show updated markup
+            updateCarousel();
+
+            $('#view-markup').classList.remove('is-active');
+        }
+
+        $('#btn-close-markup').addEventListener('click', closeMarkup);
+        $('#btn-save-markup').addEventListener('click', closeMarkup); // "Done" just closes now
+
+        function resizeCanvas() {
+            const img = $('#markup-bg-img');
+            // Use natural dimensions for coordinate consistency with export
+            markupCanvas.width = img.naturalWidth;
+            markupCanvas.height = img.naturalHeight;
+
+            // Display size matches the rendered image size
+            // We use getBoundingClientRect to be precise
+            const rect = img.getBoundingClientRect();
+            markupCanvas.style.width = rect.width + 'px';
+            markupCanvas.style.height = rect.height + 'px';
+        }
+
+        function renderCanvas() {
+            markupCtx.clearRect(0, 0, markupCanvas.width, markupCanvas.height);
+            markupCtx.lineCap = 'round';
+            markupCtx.lineJoin = 'round';
+
+            markupState.objects.forEach((obj, i) => {
+                markupCtx.beginPath();
+                markupCtx.strokeStyle = obj.color;
+                markupCtx.lineWidth = 4;
+                markupCtx.fillStyle = obj.color;
+
+                // Highlight selection
+                if (markupState.selection === i) {
+                    markupCtx.shadowColor = '#fff';
+                    markupCtx.shadowBlur = 10;
+                } else {
+                    markupCtx.shadowBlur = 0;
+                }
+
+                if (obj.type === 'freehand') {
+                    if (obj.points.length > 0) {
+                        markupCtx.moveTo(obj.points[0].x, obj.points[0].y);
+                        for (let j = 1; j < obj.points.length; j++) {
+                            markupCtx.lineTo(obj.points[j].x, obj.points[j].y);
+                        }
+                        markupCtx.stroke();
+                    }
+                } else if (obj.type === 'rect') {
+                    markupCtx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                } else if (obj.type === 'circle') {
+                    markupCtx.beginPath();
+                    // Ellipse logic
+                    markupCtx.ellipse(obj.x + obj.w / 2, obj.y + obj.h / 2, Math.abs(obj.w / 2), Math.abs(obj.h / 2), 0, 0, 2 * Math.PI);
+                    markupCtx.stroke();
+                } else if (obj.type === 'arrow') {
+                    const headlen = 15;
+                    const endX = obj.x + obj.w;
+                    const endY = obj.y + obj.h;
+                    const angle = Math.atan2(endY - obj.y, endX - obj.x);
+                    markupCtx.moveTo(obj.x, obj.y);
+                    markupCtx.lineTo(endX, endY);
+                    markupCtx.stroke();
+
+                    // Arrowhead
+                    markupCtx.beginPath();
+                    markupCtx.moveTo(endX, endY);
+                    markupCtx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
+                    markupCtx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
+                    markupCtx.fill();
+                }
+
+                // Draw handles if selected
+                if (markupState.selection === i && obj.type !== 'freehand') {
+                    markupCtx.shadowBlur = 0;
+                    markupCtx.fillStyle = '#fff';
+                    // Bottom-right handle
+                    markupCtx.fillRect(obj.x + obj.w - 5, obj.y + obj.h - 5, 10, 10);
+                }
+            });
+        }
+
+        // TOOLBAR HANDLERS
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+                markupState.selection = null;
+                renderCanvas();
+            });
+        });
+
+        document.querySelectorAll('.color-opt').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                markupState.currentColor = opt.dataset.color;
+
+                // If selection exists, update its color
+                if (markupState.selection !== null) {
+                    markupState.objects[markupState.selection].color = markupState.currentColor;
+                    renderCanvas();
+                }
+            });
+        });
+
+        $('#btn-clear').addEventListener('click', () => {
+            markupState.objects = [];
+            renderCanvas();
+        });
+
+        $('#btn-undo').addEventListener('click', () => {
+            markupState.objects.pop();
+            markupState.selection = null;
+            renderCanvas();
+        });
+
+        // INPUT HANDLERS
+        function getMarkupCoords(e) {
+            const rect = markupCanvas.getBoundingClientRect();
+            const scaleX = markupCanvas.width / rect.width;
+            const scaleY = markupCanvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        markupCanvas.addEventListener('mousedown', startInteraction);
+        markupCanvas.addEventListener('touchstart', startInteraction, { passive: false });
+
+        markupCanvas.addEventListener('mousemove', dragInteraction);
+        markupCanvas.addEventListener('touchmove', dragInteraction, { passive: false });
+
+        markupCanvas.addEventListener('mouseup', endInteraction);
+        markupCanvas.addEventListener('touchend', endInteraction);
+
+
+        function startInteraction(e) {
+            if (e.touches) e.preventDefault();
+            const { x, y } = getMarkupCoords(e);
+            markupState.startX = x;
+            markupState.startY = y;
+            markupState.isDrawing = true;
+
+            if (currentTool === 'select') {
+                // Check for handle hit first (Resize)
+                if (markupState.selection !== null) {
+                    const sel = markupState.objects[markupState.selection];
+                    if (sel.type !== 'freehand') {
+                        const handleX = sel.x + sel.w;
+                        const handleY = sel.y + sel.h;
+                        if (Math.abs(x - handleX) < 20 && Math.abs(y - handleY) < 20) {
+                            markupState.action = 'resize';
+                            return;
+                        }
+                    }
+                }
+
+                // Hit test for selection (reverse order)
+                markupState.selection = null;
+                for (let i = markupState.objects.length - 1; i >= 0; i--) {
+                    const obj = markupState.objects[i];
+                    if (obj.type === 'freehand') continue; // Simple hit test skip
+
+                    if (x >= obj.x && x <= obj.x + obj.w && y >= obj.y && y <= obj.y + obj.h) {
+                        markupState.selection = i;
+                        markupState.action = 'move';
+                        markupState.offsetX = x - obj.x;
+                        markupState.offsetY = y - obj.y;
+                        break;
+                    }
+                }
+                renderCanvas();
+            } else {
+                // Start new shape
+                const newObj = {
+                    type: currentTool,
+                    color: markupState.currentColor,
+                    x: x, y: y, w: 0, h: 0,
+                    points: [{ x, y }]
+                };
+                markupState.objects.push(newObj);
+                markupState.selection = null; // Deselect when drawing new
+            }
+        }
+
+        function dragInteraction(e) {
+            if (!markupState.isDrawing) return;
+            if (e.touches) e.preventDefault();
+            const { x, y } = getMarkupCoords(e);
+
+            if (currentTool === 'select') {
+                if (markupState.selection !== null) {
+                    const obj = markupState.objects[markupState.selection];
+                    if (markupState.action === 'move') {
+                        obj.x = x - markupState.offsetX;
+                        obj.y = y - markupState.offsetY;
+                    } else if (markupState.action === 'resize') {
+                        obj.w = x - obj.x;
+                        obj.h = y - obj.y;
+                    }
+                    renderCanvas();
+                }
+            } else {
+                // Drawing
+                const currentObj = markupState.objects[markupState.objects.length - 1];
+                if (currentTool === 'freehand') {
+                    currentObj.points.push({ x, y });
+                } else {
+                    currentObj.w = x - markupState.startX;
+                    currentObj.h = y - markupState.startY;
+                }
+                renderCanvas();
+            }
+        }
+
+        function endInteraction() {
+            markupState.isDrawing = false;
+            markupState.action = null;
+        }
+
+        // ═══════════════════════════════════════════════════
+        // EXPORT HELPERS
+        // ═══════════════════════════════════════════════════
+        async function uploadMarkupAndGetUrl(originalUrl) {
+            const historyItem = state.history.find(h => h.url === originalUrl);
+            if (!historyItem || !historyItem.markup || historyItem.markup.length === 0) return originalUrl;
+
+            // Re-render everything to a fresh canvas
+            return new Promise((resolve, reject) => {
+                const exportCanvas = document.createElement('canvas');
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = originalUrl;
+                img.onload = async () => {
+                    exportCanvas.width = img.naturalWidth;
+                    exportCanvas.height = img.naturalHeight;
+                    const ctx = exportCanvas.getContext('2d');
+
+                    ctx.drawImage(img, 0, 0);
+
+                    // Render markup directly on export canvas:
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    historyItem.markup.forEach(obj => {
+                        ctx.beginPath();
+                        ctx.strokeStyle = obj.color;
+                        ctx.lineWidth = 4;
+                        ctx.fillStyle = obj.color;
+
+                        if (obj.type === 'freehand') {
+                            if (obj.points.length > 0) {
+                                ctx.moveTo(obj.points[0].x, obj.points[0].y);
+                                for (let j = 1; j < obj.points.length; j++) {
+                                    ctx.lineTo(obj.points[j].x, obj.points[j].y);
+                                }
+                                ctx.stroke();
+                            }
+                        } else if (obj.type === 'rect') {
+                            ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                        } else if (obj.type === 'circle') {
+                            ctx.beginPath();
+                            ctx.ellipse(obj.x + obj.w / 2, obj.y + obj.h / 2, Math.abs(obj.w / 2), Math.abs(obj.h / 2), 0, 0, 2 * Math.PI);
+                            ctx.stroke();
+                        } else if (obj.type === 'arrow') {
+                            const headlen = 15;
+                            const endX = obj.x + obj.w;
+                            const endY = obj.y + obj.h;
+                            const angle = Math.atan2(endY - obj.y, endX - obj.x);
+                            ctx.moveTo(obj.x, obj.y);
+                            ctx.lineTo(endX, endY);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(endX, endY);
+                            ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
+                            ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
+                            ctx.fill();
+                        }
+                    });
+
+                    exportCanvas.toBlob(async (blob) => {
+                        const safeName = `markup_${Date.now()}_${Math.random().toString(36).substring(7)}.png`;
+                        const { error } = await sb.storage.from(CONFIG.BUCKET).upload(safeName, blob);
+                        if (error) { reject(error); return; }
+                        const { data: { publicUrl } } = sb.storage.from(CONFIG.BUCKET).getPublicUrl(safeName);
+                        resolve(publicUrl);
+                    }, 'image/png');
+                };
+                img.onerror = reject;
+            });
+        }
+
+    </script>
+</body>
+
+</html>
