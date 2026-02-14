@@ -339,6 +339,7 @@
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             opacity: 0;
             transition: opacity 0.5s ease;
             pointer-events: none;
@@ -1093,7 +1094,16 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-secondary);
             border-radius: 50px;
-            padding: 10px 20px;
+            padding: 0 20px;
+            /* Remove vertical padding, let flex + height handle it */
+            height: 44px;
+            /* Fixed height to match inputs/other buttons */
+            display: flex;
+            /* Add flex for centering */
+            align-items: center;
+            /* Center vertically */
+            justify-content: center;
+            /* Center horizontally */
             font-size: 0.8rem;
             font-family: 'Outfit', sans-serif;
             font-weight: 500;
@@ -1373,37 +1383,47 @@
             backdrop-filter: blur(20px);
             z-index: 2000;
             display: flex;
-            /* Override default block if needed, but view has flex */
         }
 
         .markup-container {
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
             position: relative;
+            overflow: hidden;
         }
 
         .markup-header {
-            padding: 1rem 1.5rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1.5rem 2rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid var(--glass-border);
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+            border-bottom: none;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .markup-header>* {
+            pointer-events: auto;
         }
 
         .markup-title {
             font-size: 1rem;
-            font-weight: 500;
+            font-weight: 600;
             letter-spacing: 1px;
-            color: var(--text-primary);
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .btn-icon {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.05);
+            /* Slight back for better visibility */
             border: none;
-            color: var(--text-secondary);
+            color: rgba(255, 255, 255, 0.8);
             cursor: pointer;
             padding: 8px;
             border-radius: 50%;
@@ -1411,6 +1431,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
         }
 
         .btn-icon:hover {
@@ -1439,28 +1460,29 @@
         }
 
         .canvas-wrapper {
-            flex: 1;
-            position: relative;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             background: #000;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             touch-action: none;
-            /* Prevent scrolling while drawing */
+            z-index: 10;
         }
 
         #markup-bg-img {
             display: block;
             max-width: 100%;
             max-height: 100%;
+            /* Will fill screen */
             width: auto;
             height: auto;
-            /* object-fit: contain; REMOVED to insure element size == visual size */
             pointer-events: none;
             user-select: none;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            /* Visual separation */
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
         }
 
         #markup-canvas {
@@ -1475,18 +1497,37 @@
         }
 
         .markup-toolbar {
-            padding: 1rem 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-top: 1px solid var(--glass-border);
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: auto;
+            max-width: 90%;
+            padding: 10px 20px;
+            background: rgba(20, 20, 25, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            justify-content: center;
+            gap: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        .tool-options {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .color-options {
             display: flex;
             gap: 12px;
+            padding-right: 16px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .color-opt {
@@ -2155,6 +2196,252 @@
             color: var(--text-secondary);
             line-height: 1.5;
         }
+
+        /* ════════ GRID VIEW ════════ */
+        /* Render Button */
+        /* Render Button */
+        .btn-render-action {
+            /* Match .btn-refine-action dimensions/shape */
+            border: none;
+            border-radius: 50px;
+            padding: 10px 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s var(--transition-bounce);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(253, 216, 53, 0.3);
+            /* Yellow shadow */
+
+            /* Yellow Gradient */
+            background: linear-gradient(135deg, #FFEB3B 0%, #FBC02D 100%);
+            color: #1a1500;
+            /* Dark text */
+        }
+
+        .btn-render-action:hover {
+            transform: scale(1.05) translateY(-1px);
+            box-shadow: 0 6px 25px rgba(253, 216, 53, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn-render-action:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            filter: grayscale(0.5);
+        }
+
+        /* 3D Done State */
+        .btn-3d.is-done {
+            background: rgba(76, 231, 160, 0.2);
+            border-color: #4CE7A0;
+            color: #4CE7A0;
+            box-shadow: 0 0 15px rgba(76, 231, 160, 0.2);
+        }
+
+        .btn-3d.is-done:hover {
+            background: rgba(76, 231, 160, 0.3);
+        }
+
+        /* Spinner */
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .icon-spinner {
+            animation: spin 0.8s linear infinite;
+            transform-origin: center;
+        }
+
+        /* Zoom Modal */
+
+        .btn-render-action:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 3D Done State */
+        .btn-3d.is-done {
+            background: rgba(76, 231, 160, 0.2);
+            border-color: #4CE7A0;
+            color: #4CE7A0;
+            box-shadow: 0 0 15px rgba(76, 231, 160, 0.2);
+        }
+
+        .btn-3d.is-done:hover {
+            background: rgba(76, 231, 160, 0.3);
+        }
+
+        /* Zoom Modal */
+        .zoom-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .zoom-modal.is-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .zoom-modal img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .zoom-modal.is-active img {
+            transform: scale(1);
+        }
+
+        .btn-close-zoom {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
+        }
+
+        .btn-close-zoom:hover {
+            background: rgba(231, 76, 76, 0.8);
+        }
+
+        .grid-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            padding-bottom: 2rem;
+        }
+
+        .grid-item {
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: all 0.4s ease;
+            background: #000;
+        }
+
+        .grid-item:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-glow);
+        }
+
+        .grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .grid-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .grid-item .select-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-item:hover .select-overlay {
+            opacity: 1;
+        }
+
+        .btn-select {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .grid-item:hover .btn-select {
+            transform: translateY(0);
+        }
+
+        .grid-item:hover .btn-zoom {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn-zoom {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease 0.1s;
+            z-index: 5;
+        }
+
+        .btn-zoom:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
     </style>
 </head>
 
@@ -2303,10 +2590,38 @@
                 </div>
             </div>
 
+            <!-- ▸ GRID VIEW -->
+            <div id="view-grid" class="view" style="overflow-y: auto;">
+                <div class="grid-container">
+                    <h2 class="pref-title"><span>Select a Design to Iterate</span></h2>
+                    <div class="grid-layout" id="grid-layout">
+                        <!-- Grid items injected by JS -->
+                    </div>
+                    <button class="btn-back" id="btn-back-grid" style="position:static; margin-top:2rem;">
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="15 18 9 12 15 6" />
+                        </svg>
+                        Start Over
+                    </button>
+                </div>
+            </div>
+
             <!-- ▸ RESULT VIEW -->
             <!-- ▸ RESULT VIEW (CAROUSEL) -->
             <div id="view-result" class="view carousel-view">
                 <div class="carousel-scene">
+                    <!-- Back to Grid Button -->
+                    <button class="btn-back" id="btn-back-to-grid"
+                        style="position:absolute; top:20px; left:20px; z-index:100; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); padding:8px 16px; border-radius:50px; pointer-events:auto;">
+                        <svg viewBox="0 0 24 24">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Back to Grid
+                    </button>
+
                     <div class="carousel-stage" id="carousel-stage">
                         <!-- Cards injected by JS -->
                     </div>
@@ -2327,105 +2642,139 @@
                             <input type="text" class="refine-input" id="refine-input"
                                 placeholder="Refine this design... (e.g. 'Make it darker')">
                             <button class="btn-refine-action" id="btn-refine">
-                                <span>✨ Refine</span>
-                            </button>
-                        </div>
-
-                        <div class="dock-actions">
-                            <a class="dock-btn" id="btn-download" href="#" target="_blank" download>Download</a>
-                            <button class="dock-btn" id="btn-reset">New Project</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-            <!-- ▸ MARKUP VIEW (Overlay) -->
-            <div id="view-markup" class="view overlay-view">
-                <div class="markup-container">
-                    <div class="markup-header">
-                        <button class="btn-icon" id="btn-close-markup">
-                            <svg viewBox="0 0 24 24">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                        <div class="markup-title">Draw Feedback</div>
-                        <button class="btn-text" id="btn-save-markup">Done</button>
-                    </div>
-
-                    <div class="canvas-wrapper" id="canvas-wrapper">
-                        <!-- Canvas and Image will be injected here -->
-                        <img id="markup-bg-img" alt="Background">
-                        <canvas id="markup-canvas"></canvas>
-                    </div>
-
-                    <div class="markup-toolbar">
-                        <div class="color-options">
-                            <div class="color-opt active" data-color="#E74C4C" style="background:#E74C4C"></div>
-                            <div class="color-opt" data-color="#E74C4C" style="background:#E74C4C"></div>
-                            <div class="color-opt" data-color="#FFFFFF" style="background:#FFFFFF"></div>
-                            <div class="color-opt" data-color="#4CE7A0" style="background:#4CE7A0"></div>
-                        </div>
-                        <div class="tool-options">
-                            <!-- Shapes -->
-                            <button class="btn-icon tool-btn" data-tool="select" title="Select / Move">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
-                                </svg>
-                            </button>
-                            <button class="btn-icon tool-btn active" data-tool="freehand" title="Freehand">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                                    <path d="M2 2l7.586 7.586"></path>
-                                    <circle cx="11" cy="11" r="2"></circle>
-                                </svg>
-                            </button>
-                            <button class="btn-icon tool-btn" data-tool="rect" title="Rectangle">
-                                <svg viewBox="0 0 24 24">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                </svg>
-                            </button>
-                            <button class="btn-icon tool-btn" data-tool="circle" title="Circle">
-                                <svg viewBox="0 0 24 24">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                </svg>
-                            </button>
-                            <button class="btn-icon tool-btn" data-tool="arrow" title="Arrow">
-                                <svg viewBox="0 0 24 24">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    <polyline points="12 5 19 12 12 19"></polyline>
-                                </svg>
-                            </button>
-
-                            <div class="tool-separator"
-                                style="width:1px; height:24px; background:rgba(255,255,255,0.1); margin:0 8px;"></div>
-
-                            <button class="btn-icon" id="btn-undo" title="Undo">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M3 7v6h6"></path>
-                                    <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
-                                </svg>
-                            </button>
-                            <button class="btn-icon" id="btn-clear" title="Clear All">
-                                <svg viewBox="0 0 24 24">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
+                                    fill="none" stroke-linecap="round" stroke-linejoin="round">
                                     <path
-                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
                                     </path>
                                 </svg>
+                                <span>Refine</span>
+                            </button>
+                            <button class="btn-render-action" id="btn-render">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+                                    fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="5" />
+                                    <line x1="12" y1="1" x2="12" y2="3" />
+                                    <line x1="12" y1="21" x2="12" y2="23" />
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                    <line x1="1" y1="12" x2="3" y2="12" />
+                                    <line x1="21" y1="12" x2="23" y2="12" />
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                                </svg>
+                                <span>Render</span>
                             </button>
                         </div>
                     </div>
+
+                    <div class="dock-actions">
+                        <a class="dock-btn" id="btn-download" href="#" target="_blank" download>Download</a>
+                        <button class="dock-btn" id="btn-reset">New Project</button>
+                    </div>
                 </div>
             </div>
-
         </div>
+
+
+        <!-- ▸ MARKUP VIEW (Overlay) -->
+        <div id="view-markup" class="view overlay-view">
+            <div class="markup-container">
+                <div class="markup-header">
+                    <button class="btn-icon" id="btn-close-markup">
+                        <svg viewBox="0 0 24 24">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="markup-title">Draw Feedback</div>
+                    <button class="btn-text" id="btn-save-markup">Done</button>
+                </div>
+
+                <div class="canvas-wrapper" id="canvas-wrapper">
+                    <!-- Canvas and Image will be injected here -->
+                    <img id="markup-bg-img" alt="Background">
+                    <canvas id="markup-canvas"></canvas>
+                </div>
+
+                <div class="markup-toolbar">
+                    <div class="color-options">
+                        <div class="color-opt active" data-color="#E74C4C" style="background:#E74C4C"></div>
+                        <div class="color-opt" data-color="#E74C4C" style="background:#E74C4C"></div>
+                        <div class="color-opt" data-color="#FFFFFF" style="background:#FFFFFF"></div>
+                        <div class="color-opt" data-color="#4CE7A0" style="background:#4CE7A0"></div>
+                    </div>
+                    <div class="tool-options">
+                        <!-- Shapes -->
+                        <button class="btn-icon tool-btn" data-tool="select" title="Select / Move">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+                            </svg>
+                        </button>
+                        <button class="btn-icon tool-btn active" data-tool="freehand" title="Freehand">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                                <path d="M2 2l7.586 7.586"></path>
+                                <circle cx="11" cy="11" r="2"></circle>
+                            </svg>
+                        </button>
+                        <button class="btn-icon tool-btn" data-tool="rect" title="Rectangle">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            </svg>
+                        </button>
+                        <button class="btn-icon tool-btn" data-tool="circle" title="Circle">
+                            <svg viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                            </svg>
+                        </button>
+                        <button class="btn-icon tool-btn" data-tool="arrow" title="Arrow">
+                            <svg viewBox="0 0 24 24">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+
+                        <div class="tool-separator"
+                            style="width:1px; height:24px; background:rgba(255,255,255,0.1); margin:0 8px;"></div>
+
+                        <button class="btn-icon" id="btn-undo" title="Undo">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 7v6h6"></path>
+                                <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+                            </svg>
+                        </button>
+                        <button class="btn-icon" id="btn-clear" title="Clear All">
+                            <svg viewBox="0 0 24 24">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
     </div>
 
     <!-- Error toast -->
     <div class="error-message" id="error-toast"></div>
+
+    <!-- Zoom Modal -->
+    <div class="zoom-modal" id="zoom-modal">
+        <button class="btn-close-zoom" id="btn-close-zoom">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <img id="zoom-img" src="" alt="Zoomed View">
+    </div>
 
     <script>
         // ═══════════════════════════════════════════════════
@@ -2468,6 +2817,7 @@
             upload: $('#view-upload'),
             prefs: $('#view-preferences'),
             loading: $('#view-loading'),
+            grid: $('#view-grid'),
             result: $('#view-result'),
         };
         const els = {
@@ -2488,9 +2838,15 @@
             navNext: $('#nav-next'),
             refineInput: $('#refine-input'),
             btnRefine: $('#btn-refine'),
+            btnRender: $('#btn-render'),
             btnDownload: $('#btn-download'),
             btnReset: $('#btn-reset'),
             particleCanvas: $('#particle-canvas'),
+
+            // Grid Elements
+            gridLayout: $('#grid-layout'),
+            btnBackGrid: $('#btn-back-grid'),
+            btnBackToGrid: $('#btn-back-to-grid'),
 
             errorToast: $('#error-toast'),
             stepIndicator: $('#step-indicator')
@@ -2506,7 +2862,8 @@
             color: '#e74c4c',
             history: [],
             historyIndex: -1,
-            isSketch: false
+            isSketch: false,
+            gridResults: [] // Store the batch of 6 URLs
         };
 
         // ═══════════════════════════════════════════════════
@@ -2615,10 +2972,14 @@
 
             // Add 3D Button
             const btn3D = document.createElement('div');
-            btn3D.className = 'btn-3d';
+            btn3D.className = 'btn-3d ' + (item.threeDUrl ? 'is-done' : ''); // Add class if cached
+
+            // Text changes based on state
+            const btnText = item.threeDUrl ? '3D Render Done' : '3D View';
+
             btn3D.innerHTML = `
                 <svg viewBox="0 0 24 24"><path d="M12 3l10 6v6l-10 6L2 15V9l10-6z"/><path d="M12 21V9"/><path d="M2 9l10-6 10 6"/></svg>
-                <span>3D View</span>
+                <span>${btnText}</span>
             `;
             btn3D.title = "View in 3D";
             btn3D.onclick = (e) => {
@@ -2720,6 +3081,11 @@
 
         function updateCarousel() {
             const stage = els.carouselStage;
+
+            // FIX: Remove extra items if history shrank (e.g. going back to grid and selecting new)
+            while (stage.children.length > state.history.length) {
+                stage.removeChild(stage.lastChild);
+            }
 
             // 1. Sync DOM (Append New Items)
             while (stage.children.length < state.history.length) {
@@ -2915,20 +3281,33 @@
         // ═══════════════════════════════════════════════════
         els.btnGenerate.addEventListener('click', () => processDesign(false));
         els.btnRefine.addEventListener('click', () => processDesign(true));
+        els.btnRender.addEventListener('click', () => processDesign(true, true)); // Pass true for isAutoRender
         els.refineInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') processDesign(true);
         });
 
-        async function processDesign(isRefine) {
+        async function processDesign(isRefine, isAutoRender = false) {
             let userNotes = '';
 
             if (isRefine) {
                 userNotes = els.refineInput.value.trim();
-                // Allow empty for re-roll, but generally encourage prompt
-                if (!userNotes) return showError('Please describe your changes.');
 
-                els.btnRefine.innerHTML = '<span>⏳ Refining...</span>';
-                els.btnRefine.disabled = true;
+                if (isAutoRender) {
+                    userNotes = "Render this photo realistic, with sunlight and a cozy vibe.";
+                } else if (!userNotes) {
+                    return showError('Please describe your changes.');
+                }
+
+                if (isAutoRender) {
+                    els.btnRender.innerHTML = '<svg class="icon-spinner" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> <span>Rendering...</span>';
+                    els.btnRender.disabled = true;
+                    els.btnRefine.disabled = true; // disable neighbor too
+                } else {
+                    els.btnRefine.innerHTML = '<svg class="icon-spinner" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> <span>Refining...</span>';
+                    els.btnRefine.disabled = true;
+                    els.btnRender.disabled = true; // disable neighbor too
+                }
+
                 spawnParticles(); // Trigger effect on start
             } else {
                 userNotes = $('#notes-input').value.trim();
@@ -2949,19 +3328,18 @@
 
                 // Check for deferred markup upload
                 if (isRefine) {
-                    els.btnRefine.innerHTML = '<span>⏳ Uploading Feedback...</span>';
+                    const btn = isAutoRender ? els.btnRender : els.btnRefine;
+                    const prevText = btn.innerHTML;
+                    btn.innerHTML = '<svg class="icon-spinner" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> <span>Uploading Feedback...</span>';
                     try {
                         sourceImage = await uploadMarkupAndGetUrl(sourceImage);
                     } catch (e) {
                         console.error("Markup upload failed", e);
-                        // Fallback to original image if markup fails? Or stop? 
-                        // Let's stop and warn
                         throw new Error("Failed to upload markup: " + e.message);
                     }
-                    els.btnRefine.innerHTML = '<span>⏳ Refining...</span>';
+                    btn.innerHTML = prevText; // Restore previous loading text
                 }
 
-                // Payload Fix: Refine = Text Only
                 const preferencesObj = isRefine
                     ? { notes: userNotes, prompt: userNotes }
                     : { material: state.material, color: state.color, notes: userNotes };
@@ -2969,62 +3347,161 @@
                 const params = new URLSearchParams();
                 params.append('link', sourceImage);
                 params.append('preferences', JSON.stringify(preferencesObj));
-
                 const finalUrl = `${endpoint}?${params.toString()}`;
 
-                const response = await fetch(finalUrl, { method: 'GET' });
-                if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
-                const text = await response.text();
-                let resultUrl = text.trim();
-                try {
-                    const json = JSON.parse(text);
-                    resultUrl = json.response || json.url || json.link || json.output || json.image || resultUrl;
-                } catch (_) { }
-
-                if (!resultUrl || !resultUrl.startsWith('http')) throw new Error('Invalid response');
-
-                // Success
-                clearInterval(progressInterval);
-                els.loadingFill.style.width = '100%';
-
+                // PARALLEL GENERATION LOGIC (For Initial Request)
                 if (!isRefine) {
+                    // Create 6 identical requests
+                    const requests = Array(6).fill(null).map(() =>
+                        fetch(finalUrl, { method: 'GET' })
+                            .then(res => {
+                                if (!res.ok) throw new Error(`Status ${res.status}`);
+                                return res.text();
+                            })
+                            .then(text => {
+                                let url = text.trim();
+                                try {
+                                    const json = JSON.parse(text);
+                                    url = json.response || json.url || json.link || json.output || json.image || url;
+                                } catch (_) { }
+                                if (!url || !url.startsWith('http')) throw new Error('Invalid URL');
+                                return url;
+                            })
+                    );
+
+                    // Wait for all (Settled)
+                    const results = await Promise.allSettled(requests);
+                    const successfulUrls = results
+                        .filter(r => r.status === 'fulfilled')
+                        .map(r => r.value);
+
+                    if (successfulUrls.length === 0) {
+                        throw new Error('All 6 generations failed. Please try again.');
+                    }
+
+                    // Success!
+                    state.gridResults = successfulUrls;
+                    renderGrid();
+                    startLoadingAnimation(); // Keep animation logic happy until we transition
+                    clearInterval(progressInterval);
+                    els.loadingFill.style.width = '100%';
                     await sleep(800);
-                    clearInterval(msgInterval);
                     stopLoadingAnimation();
+
+                    transitionTo(views.loading, views.grid);
                 }
+                // NORMAL ITERATION LOGIC (For Refine)
+                else {
+                    const response = await fetch(finalUrl, { method: 'GET' });
+                    if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-                // Add to history
-                // NON-DESTRUCTIVE: Append to end even if we went back
-                // if (state.historyIndex < state.history.length - 1) {
-                //     state.history = state.history.slice(0, state.historyIndex + 1);
-                // }
-                state.history.push({ url: resultUrl, note: userNotes });
-                state.historyIndex = state.history.length - 1;
+                    const text = await response.text();
+                    let resultUrl = text.trim();
+                    try {
+                        const json = JSON.parse(text);
+                        resultUrl = json.response || json.url || json.link || json.output || json.image || resultUrl;
+                    } catch (_) { }
 
-                // Update UI
-                updateCarousel();
-                spawnParticles(); // Magic Reveal
+                    if (!resultUrl || !resultUrl.startsWith('http')) throw new Error('Invalid response');
 
-                if (isRefine) {
+                    // Success
+                    clearInterval(progressInterval);
+                    els.loadingFill.style.width = '100%';
+
+                    // Add to history
+                    state.history.push({ url: resultUrl, note: userNotes });
+                    state.historyIndex = state.history.length - 1;
+
+                    // Update UI
+                    updateCarousel();
+                    spawnParticles(); // Magic Reveal
+
                     els.refineInput.value = '';
-                    els.btnRefine.innerHTML = '<span>✨ Refine</span>';
+
+                    // Reset Both
+                    els.btnRefine.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> <span>Refine</span>';
                     els.btnRefine.disabled = false;
-                } else {
-                    transitionTo(views.loading, views.result);
+
+                    els.btnRender.innerHTML = `
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                                <span>Render</span>`;
+                    els.btnRender.disabled = false;
                 }
 
             } catch (err) {
                 console.error(err);
                 showError('Generation failed: ' + err.message);
                 if (isRefine) {
-                    els.btnRefine.innerHTML = '<span>✨ Refine</span>';
+                    els.btnRefine.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> <span>Refine</span>';
                     els.btnRefine.disabled = false;
+                    els.btnRender.disabled = false;
+                    els.btnRender.innerHTML = `
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                                <span>Render</span>`;
                 } else {
                     goToUpload();
                 }
             }
         }
+
+        // ═══════════════════════════════════════════════════
+        // GRID LOGIC
+        // ═══════════════════════════════════════════════════
+        function renderGrid() {
+            els.gridLayout.innerHTML = '';
+            state.gridResults.forEach((url, index) => {
+                const item = document.createElement('div');
+                item.className = 'grid-item';
+                item.innerHTML = `
+                    <img src="${url}" loading="lazy" alt="Design Option ${index + 1}">
+                    <button class="btn-zoom" title="Zoom View" onclick="event.stopPropagation(); openZoom('${url}')">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                    </button>
+                    <div class="select-overlay">
+                        <button class="btn-select">Select</button>
+                    </div>
+                `;
+                item.onclick = () => selectGridItem(url);
+                els.gridLayout.appendChild(item);
+            });
+        }
+
+        // Zoom Logic
+        const zoomModal = document.getElementById('zoom-modal');
+        const zoomImg = document.getElementById('zoom-img');
+        const btnCloseZoom = document.getElementById('btn-close-zoom');
+
+        window.openZoom = (url) => {
+            zoomImg.src = url;
+            zoomModal.classList.add('is-active');
+        };
+
+        function closeZoom() {
+            zoomModal.classList.remove('is-active');
+            setTimeout(() => { zoomImg.src = ''; }, 300);
+        }
+
+        btnCloseZoom.addEventListener('click', closeZoom);
+        zoomModal.addEventListener('click', (e) => {
+            if (e.target === zoomModal) closeZoom();
+        });
+
+        function selectGridItem(url) {
+            // Start new history branch
+            state.history = [{ url: url, note: 'Selected from grid' }];
+            state.historyIndex = 0;
+            updateCarousel();
+            transitionTo(views.grid, views.result);
+        }
+
+        els.btnBackGrid.addEventListener('click', () => {
+            // "Start Over" from grid view
+            goToUpload();
+        });
+
+        els.btnBackToGrid.addEventListener('click', () => {
+            transitionTo(views.result, views.grid);
+        });
 
         // ═══════════════════════════════════════════════════
         // HELPERS
@@ -3091,7 +3568,7 @@
 
             // 2. Loading State
             const originalHTML = btnElement.innerHTML;
-            btnElement.innerHTML = '<span>⏳ Loading...</span>';
+            btnElement.innerHTML = '<svg class="icon-spinner" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> <span>Loading...</span>';
             btnElement.style.pointerEvents = 'none';
 
             try {
@@ -3111,7 +3588,19 @@
                 if (viewUrl) {
                     // 4. Cache & Open
                     item.threeDUrl = viewUrl;
-                    window.open(viewUrl, '_blank');
+
+                    // UPDATE: Don't auto-redirect. Just update UI.
+                    // window.open(viewUrl, '_blank'); 
+
+                    // Mark button as done
+                    btnElement.classList.add('is-done');
+                    btnElement.innerHTML = `
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span>3D Render Done</span>
+                    `;
+
+                    // On next click, normal behavior (handled by cache check in step 1) handles the open.
+
                 } else {
                     throw new Error('No 3D link in response');
                 }
@@ -3119,13 +3608,18 @@
             } catch (err) {
                 console.error("3D View Failed:", err);
                 showError('Could not generate 3D view.');
-            } finally {
-                // 5. Restore Button
-                // If success, maybe change text to "Open 3D"? 
-                // For now, keep it simple as requested: "reverts to 3D" implied, but caching handles next click.
-                // Actually, if we have a link, let's keep it looking like a button.
+
+                // Restore on error
                 btnElement.innerHTML = originalHTML;
                 btnElement.style.pointerEvents = 'auto';
+            } finally {
+                // 5. Restore Button (Only if NOT successful, if success we keep "Done" state)
+                if (!item.threeDUrl) {
+                    btnElement.innerHTML = originalHTML;
+                    btnElement.style.pointerEvents = 'auto';
+                } else {
+                    btnElement.style.pointerEvents = 'auto';
+                }
             }
         }
 
