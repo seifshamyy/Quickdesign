@@ -2506,7 +2506,8 @@
             color: '#e74c4c',
             history: [],
             historyIndex: -1,
-            isSketch: false
+            isSketch: false,
+            initialVariantCount: 6
         };
 
         // ═══════════════════════════════════════════════════
@@ -2596,10 +2597,27 @@
             wrapper.className = 'carousel-card-inner';
 
             const img = document.createElement('img');
-            img.src = item.url;
             img.style.objectFit = 'contain';
 
-            wrapper.appendChild(img);
+            if (item.url) {
+                img.src = item.url;
+                wrapper.appendChild(img);
+            } else {
+                card.classList.add('is-failed');
+                const failedTile = document.createElement('div');
+                failedTile.style.width = '100%';
+                failedTile.style.height = '100%';
+                failedTile.style.display = 'flex';
+                failedTile.style.alignItems = 'center';
+                failedTile.style.justifyContent = 'center';
+                failedTile.style.color = 'rgba(240, 236, 228, 0.6)';
+                failedTile.style.fontSize = '0.95rem';
+                failedTile.style.padding = '1rem';
+                failedTile.style.textAlign = 'center';
+                failedTile.textContent = 'Variant failed';
+                wrapper.appendChild(failedTile);
+            }
+
             card.appendChild(wrapper);
 
             // Add Markup Button (Always present, visibility handled by CSS)
@@ -2609,9 +2627,10 @@
             btnMarkup.title = "Draw Feedback";
             btnMarkup.onclick = (e) => {
                 e.stopPropagation();
+                if (!item.url) return;
                 openMarkup(item.url);
             };
-            wrapper.appendChild(btnMarkup);
+            if (item.url) wrapper.appendChild(btnMarkup);
 
             // Add 3D Button
             const btn3D = document.createElement('div');
@@ -2623,9 +2642,10 @@
             btn3D.title = "View in 3D";
             btn3D.onclick = (e) => {
                 e.stopPropagation();
+                if (!item.url) return;
                 handle3DClick(item, btn3D);
             };
-            wrapper.appendChild(btn3D);
+            if (item.url) wrapper.appendChild(btn3D);
 
             // Click to nav (Card level)
             card.onclick = (e) => {
@@ -2637,6 +2657,7 @@
                 // BUT: index passed is closure. If we rely on order, we should re-calc index.
                 // Simpler: Just find index in state.history by URL? Or store index on card dataset.
                 const myIndex = parseInt(card.dataset.index);
+                if (!state.history[myIndex] || !state.history[myIndex].url) return;
                 if (myIndex !== state.historyIndex) {
                     state.historyIndex = myIndex;
                     updateCarousel();
@@ -2758,8 +2779,14 @@
 
             // Update Download Link
             const currentItem = state.history[state.historyIndex];
-            if (currentItem) {
+            if (currentItem && currentItem.url) {
                 els.btnDownload.href = currentItem.url;
+                els.btnDownload.style.pointerEvents = 'auto';
+                els.btnDownload.style.opacity = '1';
+            } else {
+                els.btnDownload.removeAttribute('href');
+                els.btnDownload.style.pointerEvents = 'none';
+                els.btnDownload.style.opacity = '0.4';
             }
         }
 
@@ -2947,6 +2974,10 @@
                     ? state.history[state.historyIndex].url
                     : state.uploadedUrl;
 
+                if (isRefine && !sourceImage) {
+                    throw new Error('Please select a successful variant before refining.');
+                }
+
                 // Check for deferred markup upload
                 if (isRefine) {
                     els.btnRefine.innerHTML = '<span>⏳ Uploading Feedback...</span>';
@@ -2972,17 +3003,26 @@
 
                 const finalUrl = `${endpoint}?${params.toString()}`;
 
-                const response = await fetch(finalUrl, { method: 'GET' });
-                if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
-                const text = await response.text();
-                let resultUrl = text.trim();
-                try {
-                    const json = JSON.parse(text);
-                    resultUrl = json.response || json.url || json.link || json.output || json.image || resultUrl;
-                } catch (_) { }
-
-                if (!resultUrl || !resultUrl.startsWith('http')) throw new Error('Invalid response');
+                if (isRefine) {
+                    const resultUrl = await requestSingleResult(finalUrl);
+                    state.history.push({ url: resultUrl, note: userNotes });
+                    state.historyIndex = state.history.length - 1;
+                } else {
+                    const baseIndex = state.history.length;
+                    const results = await requestInitialVariants(finalUrl, state.initialVariantCount);
+                    results.forEach((variantUrl) => {
+                        state.history.push({
+                            url: variantUrl,
+                            note: userNotes,
+                            failed: !variantUrl,
+                            isInitialVariant: true
+                        });
+                    });
+                    const firstSuccessOffset = results.findIndex(Boolean);
+                    state.historyIndex = firstSuccessOffset >= 0
+                        ? baseIndex + firstSuccessOffset
+                        : state.history.length - 1;
+                }
 
                 // Success
                 clearInterval(progressInterval);
@@ -2993,14 +3033,6 @@
                     clearInterval(msgInterval);
                     stopLoadingAnimation();
                 }
-
-                // Add to history
-                // NON-DESTRUCTIVE: Append to end even if we went back
-                // if (state.historyIndex < state.history.length - 1) {
-                //     state.history = state.history.slice(0, state.historyIndex + 1);
-                // }
-                state.history.push({ url: resultUrl, note: userNotes });
-                state.historyIndex = state.history.length - 1;
 
                 // Update UI
                 updateCarousel();
@@ -3024,6 +3056,38 @@
                     goToUpload();
                 }
             }
+        }
+
+        async function requestSingleResult(finalUrl) {
+            const response = await fetch(finalUrl, { method: 'GET' });
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+            const text = await response.text();
+            let resultUrl = text.trim();
+            try {
+                const json = JSON.parse(text);
+                resultUrl = json.response || json.url || json.link || json.output || json.image || resultUrl;
+            } catch (_) { }
+
+            if (!resultUrl || !resultUrl.startsWith('http')) throw new Error('Invalid response');
+            return resultUrl;
+        }
+
+        async function requestInitialVariants(finalUrl, variantCount) {
+            const jobs = Array.from({ length: variantCount }, () => requestSingleResult(finalUrl));
+            const settled = await Promise.allSettled(jobs);
+            const results = settled.map(job => (job.status === 'fulfilled' ? job.value : ''));
+            const failedCount = results.filter(url => !url).length;
+
+            if (failedCount === variantCount) {
+                throw new Error('All 6 requests failed. Please try again.');
+            }
+
+            if (failedCount > 0) {
+                showError(`${failedCount} of ${variantCount} variants failed. You can continue with the successful ones.`);
+            }
+
+            return results;
         }
 
         // ═══════════════════════════════════════════════════
