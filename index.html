@@ -3011,6 +3011,11 @@
             const wrapper = card.querySelector('.carousel-card-inner');
             const img = wrapper.querySelector('img');
 
+            // FIX: Ensure image source updates (for recycled cards)
+            if (item.url && img.src !== item.url) {
+                img.src = item.url;
+            }
+
             // Clear existing markup canvas
             const existing = wrapper.querySelector('.markup-preview');
             if (existing) existing.remove();
