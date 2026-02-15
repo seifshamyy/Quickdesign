@@ -52,7 +52,8 @@
         html,
         body {
             height: 100%;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         body {
@@ -61,7 +62,8 @@
             color: var(--text-primary);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
+            min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -192,7 +194,7 @@
             z-index: 2;
             width: 100%;
             /* max-width: 520px; -> Removed for full-width carousel */
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -203,28 +205,21 @@
         .brand {
             width: 100%;
             max-width: 800px;
-            /* Increased width to allow centering room */
             margin: 0 auto;
-            padding: 3rem 0 1.5rem;
-            /* Increased top padding, added bottom padding */
+            padding: 1.25rem 1rem 0.5rem;
             display: flex;
             justify-content: center;
-            /* CENTERED */
             align-items: center;
-            gap: 1.5rem;
-            /* More gap */
+            gap: 0.75rem;
             flex-shrink: 0;
             opacity: 0;
             animation: fadeDown 1s var(--transition-smooth) 0.2s forwards;
             text-align: left;
-            /* Keep text itself left-aligned relative to logo? or center? Flex handles this. */
         }
 
         .brand-logo {
-            width: 80px;
-            /* Larger */
-            height: 80px;
-            /* Larger */
+            width: 52px;
+            height: 52px;
             object-fit: contain;
             filter: drop-shadow(0 4px 12px rgba(231, 76, 76, 0.3));
         }
@@ -236,8 +231,7 @@
         }
 
         .brand h1 {
-            font-size: 2.2rem;
-            /* Larger */
+            font-size: 1.7rem;
             font-weight: 600;
             letter-spacing: 1px;
             color: var(--text-primary);
@@ -245,11 +239,10 @@
         }
 
         .brand-sub {
-            font-size: 0.85rem;
-            /* Larger */
+            font-size: 0.75rem;
             letter-spacing: 3px;
             color: var(--text-tertiary);
-            margin-top: 0.4rem;
+            margin-top: 0.25rem;
             text-transform: uppercase;
         }
 
@@ -509,17 +502,17 @@
             -webkit-backdrop-filter: blur(24px) saturate(1.2);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
-            padding: 2rem;
+            padding: 1.5rem;
             box-shadow: var(--shadow-ambient);
         }
 
         /* Image thumbnail */
         .thumb-preview {
             width: 100%;
-            height: 140px;
+            height: min(140px, 15vh);
             border-radius: var(--radius-md);
             overflow: hidden;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.75rem;
             position: relative;
             border: 1px solid var(--glass-border);
         }
@@ -548,10 +541,10 @@
         }
 
         .pref-title {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 500;
             text-align: center;
-            margin-bottom: 1.8rem;
+            margin-bottom: 1rem;
             color: var(--text-primary);
         }
 
@@ -563,7 +556,7 @@
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .form-label {
@@ -588,12 +581,12 @@
 
         .segment-btn {
             flex: 1;
-            padding: 0.75rem;
+            padding: 0.6rem;
             border: none;
             background: transparent;
             color: var(--text-secondary);
             font-family: 'Outfit', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 500;
             border-radius: calc(var(--radius-sm) - 2px);
             cursor: pointer;
@@ -891,8 +884,7 @@
             justify-content: center;
             perspective: 1000px;
             overflow: hidden;
-            padding-bottom: 120px;
-            /* Space for controls */
+            /* Dock is now a flex sibling, no padding-bottom hack needed */
         }
 
         .carousel-stage {
@@ -997,16 +989,15 @@
         /* Controls Area */
         /* ════════ CAROUSEL DOCK POLISH ════════ */
         .controls-dock {
-            position: fixed;
-            bottom: 0;
-            left: 0;
+            /* Flex child — sits at the bottom of the result view naturally */
+            flex-shrink: 0;
             width: 100%;
             background: linear-gradient(to top, rgba(5, 5, 8, 0.95), rgba(5, 5, 8, 0.85));
             backdrop-filter: blur(40px) saturate(1.8);
             -webkit-backdrop-filter: blur(40px) saturate(1.8);
             border-top: 1px solid rgba(231, 76, 76, 0.15);
-            padding: 1.5rem 2.5rem;
-            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            padding: 1rem 2rem;
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
             z-index: 1000;
             display: flex;
             align-items: center;
@@ -2444,6 +2435,439 @@
             background: var(--accent);
             border-color: var(--accent);
         }
+
+        /* ═══════════════════════════════════════════════════
+           RESPONSIVE — Tablet & Phone (≤768px)
+           ═══════════════════════════════════════════════════ */
+
+        /* Lock carousel/loading views to their container so they don't cause page scroll */
+        #view-result,
+        #view-loading {
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+        }
+
+        /* Preferences & upload views should scroll if content overflows */
+        #view-preferences,
+        #view-upload {
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+
+            /* Compact header further for mobile */
+            .brand {
+                padding: 1rem 0.75rem 0.5rem;
+            }
+
+            .brand-logo {
+                width: 38px;
+                height: 38px;
+            }
+
+            .brand h1 {
+                font-size: 1.35rem;
+            }
+
+            .brand-sub {
+                font-size: 0.65rem;
+                letter-spacing: 2px;
+            }
+
+            .step-indicator {
+                padding: 0.5rem 0 0.25rem;
+            }
+
+            /* Landing option cards */
+            .option-card {
+                padding: 20px 16px;
+            }
+
+            .option-icon {
+                width: 40px;
+                height: 40px;
+                margin-bottom: 10px;
+            }
+
+            .option-title {
+                font-size: 1.15rem;
+            }
+
+            .option-desc {
+                font-size: 0.82rem;
+            }
+
+            #view-upload {
+                justify-content: flex-start;
+                padding-top: 0.5rem;
+            }
+
+            /* Controls dock — stack vertically */
+            .controls-dock {
+                padding: 0.75rem 1rem;
+                padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+                gap: 0.5rem;
+            }
+
+            .dock-content-wrapper {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .refine-input-group {
+                max-width: 100%;
+                padding-left: 12px;
+            }
+
+            .dock-actions {
+                justify-content: center;
+                gap: 0.5rem;
+            }
+
+            .dock-btn {
+                padding: 0 14px;
+                height: 38px;
+                font-size: 0.7rem;
+            }
+
+            /* Carousel stage */
+            .carousel-stage {
+                width: 100vw;
+                height: 50vh;
+            }
+
+            .carousel-scene {
+                padding-bottom: 100px;
+            }
+
+            .carousel-card.is-left {
+                transform: translate3d(-45%, 0, -200px) scale(0.8) rotateY(12deg);
+            }
+
+            .carousel-card.is-right {
+                transform: translate3d(45%, 0, -200px) scale(0.8) rotateY(-12deg);
+            }
+
+            .nav-overlay {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .nav-overlay.prev {
+                left: 2vw;
+            }
+
+            .nav-overlay.next {
+                right: 2vw;
+            }
+
+            /* Keep carousel/loading views from scrolling through */
+            #view-result,
+            #view-loading {
+                overflow: hidden;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           RESPONSIVE — Small Phone (≤560px)
+           ═══════════════════════════════════════════════════ */
+        @media (max-width: 560px) {
+
+            /* Fix 4: Preferences view */
+            #view-preferences {
+                justify-content: flex-start;
+                overflow-y: auto;
+                padding-top: 1rem;
+            }
+
+            .thumb-preview {
+                height: 100px;
+            }
+
+            .pref-title {
+                font-size: 1.1rem;
+                margin-bottom: 1rem;
+            }
+
+            .btn-generate {
+                padding: 0.8rem;
+                font-size: 0.9rem;
+            }
+
+            /* Fix 7: Grid layout */
+            .grid-container {
+                padding: 1rem;
+            }
+
+            .grid-layout {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 1rem;
+            }
+
+            /* Fix 8: Markup toolbar */
+            .markup-toolbar {
+                padding: 8px 12px;
+                gap: 10px;
+                border-radius: 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           RESPONSIVE — Extra Small Phone (≤375px)
+           ═══════════════════════════════════════════════════ */
+        @media (max-width: 375px) {
+            .brand {
+                padding: 1rem 0.5rem 0.5rem;
+                gap: 0.5rem;
+            }
+
+            .brand-logo {
+                width: 36px;
+                height: 36px;
+            }
+
+            .brand h1 {
+                font-size: 1.25rem;
+            }
+
+            .brand-sub {
+                font-size: 0.6rem;
+            }
+
+            .option-card {
+                padding: 14px 12px;
+            }
+
+            .option-icon {
+                width: 32px;
+                height: 32px;
+            }
+
+            .option-title {
+                font-size: 1rem;
+            }
+
+            .btn-refine-action,
+            .btn-render-action {
+                padding: 8px 14px;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           RESPONSIVE — Short Viewport Height (any width)
+           Ensures content fits without scrolling
+           ═══════════════════════════════════════════════════ */
+        @media (max-height: 850px) {
+
+            /* Compress header */
+            .brand {
+                padding: 0.5rem 1rem 0.25rem;
+            }
+
+            .brand-logo {
+                width: 36px;
+                height: 36px;
+            }
+
+            .brand h1 {
+                font-size: 1.3rem;
+            }
+
+            .brand-sub {
+                font-size: 0.6rem;
+                margin-top: 0.1rem;
+            }
+
+            .step-indicator {
+                padding: 0.25rem 0;
+            }
+
+            /* Preferences view — compress everything */
+            .pref-card {
+                padding: 1rem 1.5rem;
+            }
+
+            .thumb-preview {
+                height: 12vh;
+                min-height: 60px;
+                margin-bottom: 0.75rem;
+            }
+
+            .pref-title {
+                font-size: 1.1rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .form-group {
+                margin-bottom: 0.75rem;
+            }
+
+            .form-label {
+                margin-bottom: 0.35rem;
+                font-size: 0.65rem;
+            }
+
+            .segment-btn {
+                padding: 0.4rem;
+                font-size: 0.85rem;
+            }
+
+            .color-picker-row {
+                padding: 0.35rem 0.75rem;
+            }
+
+            .color-swatch {
+                width: 28px;
+                height: 28px;
+            }
+
+            .notes-input {
+                min-height: 2.5em;
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            .btn-generate {
+                padding: 0.65rem;
+                font-size: 0.9rem;
+                margin-top: 0.25rem;
+            }
+
+            /* Upload/Landing option cards */
+            .option-card {
+                padding: 2vh 1.5rem;
+            }
+
+            .option-icon {
+                width: 36px;
+                height: 36px;
+                margin-bottom: 0.5rem;
+            }
+
+            .option-title {
+                font-size: 1.1rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .option-desc {
+                font-size: 0.8rem;
+            }
+
+            .landing-options {
+                gap: 1rem;
+            }
+
+            /* Grid view */
+            .grid-container {
+                padding: 0.5rem 1rem;
+            }
+
+            .grid-layout {
+                gap: 0.75rem;
+            }
+        }
+
+        @media (max-height: 550px) {
+
+            /* Ultra-compact header */
+            .brand {
+                padding: 0.25rem 0.75rem 0.15rem;
+                gap: 0.5rem;
+            }
+
+            .brand-logo {
+                width: 28px;
+                height: 28px;
+            }
+
+            .brand h1 {
+                font-size: 1.1rem;
+            }
+
+            .brand-sub {
+                display: none;
+            }
+
+            .step-indicator {
+                padding: 0.15rem 0;
+                transform: scale(0.8);
+            }
+
+            /* Preferences — ultra-compact */
+            .pref-card {
+                padding: 0.5rem 1rem;
+            }
+
+            .thumb-preview {
+                height: 8vh;
+                min-height: 40px;
+                margin-bottom: 0.4rem;
+            }
+
+            .pref-title {
+                font-size: 0.95rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .form-group {
+                margin-bottom: 0.4rem;
+            }
+
+            .segment-btn {
+                padding: 0.25rem;
+                font-size: 0.8rem;
+            }
+
+            .color-picker-row {
+                padding: 0.25rem 0.5rem;
+            }
+
+            .color-swatch {
+                width: 22px;
+                height: 22px;
+            }
+
+            .notes-input {
+                min-height: 2em;
+                padding: 0.3rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .btn-generate {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            /* Upload cards ultra-compact */
+            .option-card {
+                padding: 1.5vh 1rem;
+            }
+
+            .option-icon {
+                width: 28px;
+                height: 28px;
+                margin-bottom: 0.3rem;
+            }
+
+            .option-title {
+                font-size: 0.95rem;
+            }
+
+            .option-desc {
+                font-size: 0.75rem;
+                line-height: 1.3;
+            }
+
+            .landing-options {
+                gap: 0.5rem;
+                padding: 0.5rem;
+            }
+        }
     </style>
 </head>
 
@@ -2869,6 +3293,60 @@
         };
 
         // ═══════════════════════════════════════════════════
+        // PERSISTENCE (MVP)
+        // ═══════════════════════════════════════════════════
+        const STORAGE_KEY = 'quickdesign_state_v1';
+
+        function saveState() {
+            try {
+                // Save essential state only
+                const data = {
+                    history: state.history,
+                    historyIndex: state.historyIndex,
+                    uploadedUrl: state.uploadedUrl,
+                    localPreviewUrl: state.localPreviewUrl,
+                    gridResults: state.gridResults,
+                    isSketch: state.isSketch,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                // console.log('State saved');
+            } catch (e) {
+                console.error('Save state failed:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) return false;
+
+                const data = JSON.parse(stored);
+                // Basic validation
+                if (!data.history || !Array.isArray(data.history)) return false;
+
+                // Restore
+                state.history = data.history;
+                state.historyIndex = data.historyIndex;
+                state.uploadedUrl = data.uploadedUrl;
+                state.localPreviewUrl = data.localPreviewUrl;
+                state.gridResults = data.gridResults || [];
+                state.isSketch = !!data.isSketch;
+
+                console.log('State restored:', state);
+                return true;
+            } catch (e) {
+                console.error('Load state failed:', e);
+                return false;
+            }
+        }
+
+        function clearState() {
+            localStorage.removeItem(STORAGE_KEY);
+            console.log('State cleared');
+        }
+
+        // ═══════════════════════════════════════════════════
         // VIEW TRANSITIONS
         // ═══════════════════════════════════════════════════
         function resetAllViews() {
@@ -2895,24 +3373,45 @@
 
         console.log("Checking sketchUrl:", sketchUrl);
 
-        // DEBUG: ENABLED
-        // alert('Script running. Search: ' + window.location.search);
-        // if (sketchUrl) alert('Found Sketch URL: ' + sketchUrl);
-        // else alert('No sketch_url found');
-
+        // PRIORITY: 1. Sketch URL (URL param), 2. Local Storage
         if (sketchUrl) {
             console.log('Restoring sketch:', sketchUrl);
             state.uploadedUrl = sketchUrl;
             state.localPreviewUrl = sketchUrl;
-            state.isSketch = true; // Mark as sketch
+            state.isSketch = true;
             els.thumbImg.src = sketchUrl;
-
-            // Clean URL
             window.history.replaceState({}, document.title, window.location.pathname);
-
             views.upload.classList.remove('is-active');
             views.prefs.classList.add('is-active');
             updateSteps(2);
+        } else if (loadState()) {
+            // RESTORED FROM STORAGE
+            if (state.history.length > 0) {
+                // If we have history, show result view
+                updateCarousel();
+                // Ensure grid is also ready in background if they go back
+                if (state.gridResults.length > 0) renderGrid();
+
+                views.upload.classList.remove('is-active');
+                views.result.classList.add('is-active');
+            } else if (state.gridResults.length > 0) {
+                // We have grid results but no selection yet -> Show Grid
+                renderGrid();
+                views.upload.classList.remove('is-active');
+                views.grid.classList.add('is-active');
+
+                // Ensure upload state is valid for "Back" button
+                if (state.localPreviewUrl || state.uploadedUrl) {
+                    els.thumbImg.src = state.localPreviewUrl || state.uploadedUrl;
+                    updateSteps(2);
+                }
+            } else if (state.uploadedUrl) {
+                // If we have upload but no history/grid (rare, maybe mid-flow)
+                els.thumbImg.src = state.localPreviewUrl || state.uploadedUrl;
+                views.upload.classList.remove('is-active');
+                views.prefs.classList.add('is-active');
+                updateSteps(2);
+            }
         } else {
             views.upload.classList.add('is-active');
         }
@@ -3134,6 +3633,7 @@
             if (currentItem) {
                 els.btnDownload.href = currentItem.url;
             }
+            saveState(); // PERSIST: Save on carousel update
         }
 
         // Nav Click Handlers
@@ -3258,6 +3758,7 @@
 
                 transitionTo(views.upload, views.prefs);
                 updateSteps(2);
+                saveState(); // PERSIST: Save after upload
 
             } catch (err) {
                 console.error(err);
@@ -3471,6 +3972,7 @@
                 item.onclick = () => selectGridItem(url);
                 els.gridLayout.appendChild(item);
             });
+            saveState(); // PERSIST: Save whenever grid is rendered
         }
 
         // Zoom Logic
@@ -3497,13 +3999,24 @@
             // Start new history branch
             state.history = [{ url: url, note: 'Selected from grid' }];
             state.historyIndex = 0;
-            updateCarousel();
+            rebuildCarousel(); // Full rebuild to avoid stale closures
             transitionTo(views.grid, views.result);
+        }
+
+        // Force-clear all carousel card DOM, then rebuild from current state.history.
+        // Needed when history is fully replaced (e.g. grid re-selection) to avoid
+        // stale closures in card onclick handlers (markup, 3D buttons).
+        function rebuildCarousel() {
+            els.carouselStage.innerHTML = '';
+            updateCarousel();
         }
 
         els.btnBackGrid.addEventListener('click', () => {
             // "Start Over" from grid view
-            goToUpload();
+            if (confirm('Start a new project? This will clear current progress.')) {
+                clearState();
+                goToUpload();
+            }
         });
 
         els.btnBackToGrid.addEventListener('click', () => {
