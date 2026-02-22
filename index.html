@@ -3860,8 +3860,9 @@
                 // PARALLEL GENERATION LOGIC (For Initial Request)
                 if (!isRefine) {
                     // Create 6 identical requests
-                    const requests = Array(6).fill(null).map(() =>
-                        fetch(finalUrl, { method: 'GET' })
+                    const requests = Array(6).fill(null).map((_, i) => {
+                        const uniqueUrl = `${finalUrl}&_unique=${Date.now()}-${i}`;
+                        return fetch(uniqueUrl, { method: 'GET' })
                             .then(res => {
                                 if (!res.ok) throw new Error(`Status ${res.status}`);
                                 return res.text();
@@ -3874,8 +3875,8 @@
                                 } catch (_) { }
                                 if (!url || !url.startsWith('http')) throw new Error('Invalid URL');
                                 return url;
-                            })
-                    );
+                            });
+                    });
 
                     // Wait for all (Settled)
                     const results = await Promise.allSettled(requests);

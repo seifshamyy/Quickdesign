@@ -509,6 +509,87 @@
         bottom: calc(14px + env(safe-area-inset-bottom));
       }
     }
+
+    /* Element Palette */
+    .elemPalette {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 4px 0;
+    }
+
+    .elemSwatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: rgba(0, 0, 0, .18);
+      cursor: pointer;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select: none;
+    }
+
+    .elemSwatch:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, .18);
+      background: rgba(255, 255, 255, .05);
+    }
+
+    .elemSwatch.active {
+      border-color: var(--swatch-color, rgba(255, 255, 255, .5));
+      background: rgba(255, 255, 255, .08);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--swatch-color) 30%, transparent),
+        0 0 16px color-mix(in srgb, var(--swatch-color) 20%, transparent);
+    }
+
+    .elemDot {
+      width: 22px;
+      height: 22px;
+      border-radius: 99px;
+      background: var(--swatch-color);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--swatch-color) 40%, transparent);
+    }
+
+    .elemLabel {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .elemControls {
+      padding: 8px 0 0;
+    }
+
+    .elemControls select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      background: rgba(0, 0, 0, .22);
+      color: var(--stroke);
+      outline: none;
+      font-size: 13px;
+    }
+
+    .elemActive {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 6px 0 0;
+      text-align: center;
+    }
+
+    .elemActive .activeColor {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 99px;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
   </style>
 </head>
 
@@ -528,12 +609,6 @@
         </button>
         <button class="btn" id="toolLine" aria-pressed="false" title="Draw Walls (L)">
           <span>Wall</span><span class="k">L</span>
-        </button>
-        <button class="btn" id="toolDoor" aria-pressed="false" title="Door Tag (D)">
-          <span>Door</span><span class="k">D</span>
-        </button>
-        <button class="btn" id="toolWindow" aria-pressed="false" title="Window Tag (W)">
-          <span>Window</span><span class="k">W</span>
         </button>
         <div class="sep"></div>
         <button class="btn" id="btnSketchDone" title="Finish and Generate"
@@ -640,21 +715,6 @@
 
     <div class="group">
       <div class="row">
-        <label>Wall width</label>
-        <div class="toggle">
-          <input id="wallWidth" type="range" min="1" max="16" step="1" value="6" />
-          <div class="val" id="wallWidthVal">6</div>
-        </div>
-      </div>
-      <div class="row">
-        <label>Line style</label>
-        <select id="lineStyle">
-          <option value="solid" selected>Solid</option>
-          <option value="dashed">Dashed</option>
-          <option value="dotted">Dotted</option>
-        </select>
-      </div>
-      <div class="row">
         <label>Snap radius (px)</label>
         <div class="toggle">
           <input id="snapRadius" type="range" min="6" max="36" step="1" value="18" />
@@ -672,6 +732,29 @@
         <label>Scale (px per meter)</label>
         <input id="pxPerMeter" type="number" min="20" max="2000" step="5" value="120" />
       </div>
+    </div>
+
+    <h3>Elements</h3>
+    <div class="group">
+      <div class="elemPalette" id="elemPalette">
+        <div class="elemSwatch" data-type="door" style="--swatch-color:#4A90D9;">
+          <div class="elemDot"></div>
+          <div class="elemLabel">Door</div>
+        </div>
+        <div class="elemSwatch" data-type="window" style="--swatch-color:#F5C542;">
+          <div class="elemDot"></div>
+          <div class="elemLabel">Window</div>
+        </div>
+        <div class="elemSwatch" data-type="missing_wall" style="--swatch-color:#4CAF50;">
+          <div class="elemDot"></div>
+          <div class="elemLabel">Missing Wall</div>
+        </div>
+      </div>
+      <div class="elemControls" id="elemControls" style="display:none;">
+        <select id="elemSizeSelect"></select>
+        <div class="elemActive" id="elemActiveLabel"></div>
+      </div>
+      <div class="hint">Click a color, pick a size, then click a wall to place.</div>
     </div>
   </div>
 
@@ -696,10 +779,6 @@
         <div class="li"><span class="kbd">V</span>Select / Move (Drag background to box select)</div>
         <div class="li"><span class="kbd">L</span>Wall tool (click to place points, <span class="kbd">Enter</span>
           finish, <span class="kbd">Esc</span> cancel)</div>
-        <div class="li"><span class="kbd">D</span>Door tag (click a wall). While a door is selected: <span
-            class="kbd">R</span> rotate swing, <span class="kbd">F</span> flip side</div>
-        <div class="li"><span class="kbd">W</span>Window tag (click a wall). While a tag is selected: <span
-            class="kbd">[</span>/<span class="kbd">]</span> width</div>
         <div class="li"><span class="kbd">Space</span>Pan (drag)</div>
         <div class="li"><span class="kbd">Wheel</span>Zoom (toward cursor)</div>
         <div class="li"><span class="kbd">Alt</span>Temporarily disable snapping</div>
@@ -756,35 +835,49 @@
       const state = {
         points: [],          // {id,x,y}
         segments: [],        // walls: {id,a,b, style:{w, pattern}, kind:"wall"}
-        tags: [],            // {id,type, segId, t, widthM, swingDeg, side}
+        tags: [],            // legacy (unused)
+        elements: [],        // {id, segId, t, lengthM, type, color, label}
         settings: {
-          snap: true,        // Snap to geometry
-          grid: false,       // Snap to grid (OFF by default for free movement)
+          snap: true,
+          grid: false,
           showAngles: true,
           showLengths: true,
           outline: true,
-          wallWidth: 6,
+          wallWidth: 1,
+          wallWidth: 1,
           pattern: "solid",
           snapRadiusPx: 18,
           gridSizePx: 32,
           pxPerMeter: 120,
-        }
+        },
+        isExporting: false // Add flag for export rendering
       };
+
+      /* =========================
+          Element Type Definitions
+      ========================= */
+      const ELEMENT_TYPES = {
+        door: { color: '#4A90D9', label: 'Door', sizes: [0.7, 0.8, 0.9, 1.0, 1.2] },
+        window: { color: '#F5C542', label: 'Window', sizes: [0.6, 0.8, 1.0, 1.2, 1.5, 1.8] },
+        missing_wall: { color: '#4CAF50', label: 'Missing Wall', sizes: [0.5, 1.0, 1.5, 2.0, 3.0] },
+      };
+
+      // Current element tool state
+      const elemTool = { type: null, sizeM: null };
 
       /* =========================
           History (Undo/Redo)
       ========================= */
       const history = { stack: [], redo: [], max: 120, lastCommitAt: 0 };
       function snapshot() {
-        // Use Set->Array for storage if needed, but here we store clean objects
-        // selection is transient, not stored in history usually, but let's clear it on restore
-        return JSON.stringify({ points: state.points, segments: state.segments, tags: state.tags, settings: state.settings });
+        return JSON.stringify({ points: state.points, segments: state.segments, tags: state.tags, elements: state.elements, settings: state.settings });
       }
       function restore(json) {
         const o = JSON.parse(json);
         state.points = o.points || [];
         state.segments = o.segments || [];
         state.tags = o.tags || [];
+        state.elements = o.elements || [];
         state.settings = Object.assign(state.settings, o.settings || {});
         syncUIFromState();
         clearSelection();
@@ -990,19 +1083,19 @@
       /* =========================
           Interaction + UX
       ========================= */
-      const Mode = { SELECT: "select", WALL: "wall", DOOR: "door", WINDOW: "window" };
+      const Mode = { SELECT: "select", WALL: "wall", ELEMENT: "element" };
       let mode = Mode.SELECT;
 
-      const hover = { snap: null, segId: null, pointId: null, tagId: null };
+      const hover = { snap: null, segId: null, pointId: null, tagId: null, elemId: null };
       // Revised selection to support multiple items
       const selection = { ids: new Set() };
       const drag = {
         active: false,
-        kind: null, // "pan", "selection", "tag", "box"
-        id: null,   // for single item drag reference if needed
-        startX: 0, startY: 0, // world coords start
-        currentX: 0, currentY: 0, // world coords current (for box)
-        startMap: new Map() // ID -> {x,y} or other props
+        kind: null, // "pan", "selection", "tag", "box", "element"
+        id: null,
+        startX: 0, startY: 0,
+        currentX: 0, currentY: 0,
+        startMap: new Map()
       };
       const draw = { active: false, lastPointId: null, preview: { x: 0, y: 0 } };
 
@@ -1014,33 +1107,40 @@
         draw.active = false;
         draw.lastPointId = null;
         clearSelection();
+        if (m !== Mode.ELEMENT) {
+          // Deselect element palette
+          document.querySelectorAll('.elemSwatch').forEach(s => s.classList.remove('active'));
+          document.getElementById('elemControls').style.display = 'none';
+          elemTool.type = null;
+          elemTool.sizeM = null;
+        }
         updateModeUI();
-        toast(m === Mode.SELECT ? "Select / Drag Box" : m === Mode.WALL ? "Wall tool" : m === Mode.DOOR ? "Door tag" : "Window tag");
+        const label = m === Mode.SELECT ? "Select / Drag Box" : m === Mode.WALL ? "Wall tool" :
+          (elemTool.type ? ELEMENT_TYPES[elemTool.type].label + " tool" : "Element tool");
+        toast(label);
       }
       function clearSelection() { selection.ids.clear(); }
 
       function updateModeUI() {
         document.getElementById("toolSelect").setAttribute("aria-pressed", mode === Mode.SELECT);
         document.getElementById("toolLine").setAttribute("aria-pressed", mode === Mode.WALL);
-        document.getElementById("toolDoor").setAttribute("aria-pressed", mode === Mode.DOOR);
-        document.getElementById("toolWindow").setAttribute("aria-pressed", mode === Mode.WINDOW);
 
         const badge = document.getElementById("modeBadge");
-        badge.textContent =
-          mode === Mode.SELECT ? "MODE: SELECT" :
-            mode === Mode.WALL ? "MODE: WALL" :
-              mode === Mode.DOOR ? "MODE: DOOR" :
-                "MODE: WINDOW";
+        if (mode === Mode.ELEMENT && elemTool.type) {
+          const et = ELEMENT_TYPES[elemTool.type];
+          badge.textContent = "MODE: " + et.label.toUpperCase();
+        } else {
+          badge.textContent = mode === Mode.SELECT ? "MODE: SELECT" : "MODE: WALL";
+        }
 
         const st = document.getElementById("statusText");
         if (mode === Mode.SELECT) {
           st.innerHTML = `<span class="strong">Drag</span> background to box select • <span class="strong">Shift</span> to add`;
         } else if (mode === Mode.WALL) {
           st.innerHTML = `<span class="strong">Click</span> to place points • <span class="strong">Enter</span> finishes • <span class="strong">Esc</span> cancels`;
-        } else if (mode === Mode.DOOR) {
-          st.innerHTML = `<span class="strong">Click</span> a wall to place door • <span class="strong">R</span> rotates swing • <span class="strong">F</span> flips side`;
-        } else {
-          st.innerHTML = `<span class="strong">Click</span> a wall to place window • <span class="strong">[ / ]</span> changes width`;
+        } else if (mode === Mode.ELEMENT && elemTool.type) {
+          const et = ELEMENT_TYPES[elemTool.type];
+          st.innerHTML = `<span class="strong">Click</span> a wall to place <span class="strong">${et.label}</span> (${elemTool.sizeM}m) • <span class="strong">Esc</span> to cancel`;
         }
       }
 
@@ -1549,6 +1649,98 @@
         ctx.restore();
       }
 
+      /* =========================
+          Element Overlay Rendering
+      ========================= */
+      function getElementBounds(el) {
+        const seg = getSeg(el.segId);
+        if (!seg) return null;
+        const A = getPoint(seg.a), B = getPoint(seg.b);
+        if (!A || !B) return null;
+
+        const wallLenPx = dist(A.x, A.y, B.x, B.y);
+        const wallLenM = wallLenPx / state.settings.pxPerMeter;
+        if (wallLenM < 0.001) return null;
+
+        const elemFrac = el.lengthM / wallLenM;
+        const halfFrac = elemFrac / 2;
+        let startT = el.t - halfFrac;
+        let endT = el.t + halfFrac;
+
+        // Clamp to wall bounds
+        if (startT < 0) { startT = 0; endT = Math.min(elemFrac, 1); }
+        if (endT > 1) { endT = 1; startT = Math.max(1 - elemFrac, 0); }
+
+        return {
+          A, B, seg,
+          startT, endT,
+          sx: lerp(A.x, B.x, startT), sy: lerp(A.y, B.y, startT),
+          ex: lerp(A.x, B.x, endT), ey: lerp(A.y, B.y, endT),
+          wallLenM
+        };
+      }
+
+      function hitElement(wx, wy, rWorld) {
+        let best = null, bestD = rWorld;
+        for (const el of state.elements) {
+          const b = getElementBounds(el);
+          if (!b) continue;
+          const { d } = pointOnSegmentDistance(wx, wy, { x: b.sx, y: b.sy }, { x: b.ex, y: b.ey });
+          if (d < bestD) { bestD = d; best = el.id; }
+        }
+        return best;
+      }
+
+      function drawElements() {
+        for (const el of state.elements) {
+          const b = getElementBounds(el);
+          if (!b) continue;
+
+          const isSelected = selection.ids.has(el.id);
+          const isHover = hover.elemId === el.id;
+          const highlight = isSelected || isHover;
+
+          const s1 = worldToScreen(b.sx, b.sy);
+          const s2 = worldToScreen(b.ex, b.ey);
+
+          ctx.save();
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          // Draw colored overlay line (same width as wall)
+          const lw = 1 * camera.scale; // Matches wallWidth: 1
+          ctx.lineCap = "butt"; // Cleaner ends for segments
+
+          // Glow/Highlight behind
+          if (highlight) {
+            ctx.strokeStyle = el.color + '66';
+            ctx.lineWidth = lw + 6;
+            ctx.beginPath();
+            ctx.moveTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y);
+            ctx.stroke();
+          }
+
+          // Main colored line
+          ctx.strokeStyle = el.color;
+          ctx.lineWidth = lw;
+          ctx.beginPath();
+          ctx.moveTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y);
+          ctx.stroke();
+
+          // Selection dashed ring
+          if (isSelected) {
+            ctx.strokeStyle = '#FFFFFF88';
+            ctx.lineWidth = lw + 4;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          ctx.restore();
+        }
+      }
+
       function drawSelectionBox() {
         if (drag.kind !== "box") return;
 
@@ -1577,11 +1769,25 @@
         ctx.save();
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         const w = canvas.width / dpr, h = canvas.height / dpr;
-        const g = ctx.createRadialGradient(w * 0.2, h * 0.2, 0, w * 0.5, h * 0.5, Math.max(w, h));
-        g.addColorStop(0, "rgba(255,255,255,.03)");
-        g.addColorStop(1, "rgba(0,0,0,.55)");
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, w, h);
+        if (state.isExporting) {
+          // Solid Dark Background for Export (JPG)
+          ctx.fillStyle = "#05060a"; // Matches --bg0
+          ctx.fillRect(0, 0, w, h);
+
+          // Optional: Draw the radial gradient on top if desired, or just solid
+          const g = ctx.createRadialGradient(w * 0.2, h * 0.2, 0, w * 0.5, h * 0.5, Math.max(w, h));
+          g.addColorStop(0, "rgba(255,255,255,.03)");
+          g.addColorStop(1, "rgba(0,0,0,0)"); // Transparent to let base color show
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+
+        } else {
+          const g = ctx.createRadialGradient(w * 0.2, h * 0.2, 0, w * 0.5, h * 0.5, Math.max(w, h));
+          g.addColorStop(0, "rgba(255,255,255,.03)");
+          g.addColorStop(1, "rgba(0,0,0,.55)");
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, w, h);
+        }
         ctx.restore();
 
         drawGrid();
@@ -1593,6 +1799,7 @@
 
         drawPreview();
         drawTags();
+        drawElements();
         drawLengths();
         drawAngles();
         drawHandles();
@@ -1650,6 +1857,7 @@
         hover.pointId = hitPoint(wx, wy, rW);
         hover.tagId = hitTag(wx, wy, rW);
         hover.segId = hitSegment(wx, wy, rW);
+        hover.elemId = hitElement(wx, wy, rW);
       }
 
       function beginPan() {
@@ -1686,6 +1894,9 @@
           if (drag.kind === "selection") {
             commitHistory(true);
           }
+          if (drag.kind === "element") {
+            commitHistory(true);
+          }
           drag.active = false;
           drag.kind = null;
         }
@@ -1714,13 +1925,14 @@
         if (mode === Mode.SELECT) {
           const rW = screenPxToWorld(12);
 
-          // Check hits in priority: Tag -> Point -> Segment
+          // Check hits in priority: Element -> Tag -> Point -> Segment
+          const elHit = hitElement(wx, wy, rW);
           const tHit = hitTag(wx, wy, rW);
           const pHit = hitPoint(wx, wy, rW);
           const sHit = hitSegment(wx, wy, rW);
 
-          const hitId = tHit || pHit || sHit;
-          const hitType = tHit ? "tag" : (pHit ? "point" : (sHit ? "segment" : null));
+          const hitId = elHit || tHit || pHit || sHit;
+          const hitType = elHit ? "element" : (tHit ? "tag" : (pHit ? "point" : (sHit ? "segment" : null)));
 
           if (hitId) {
             // Selection Logic
@@ -1758,7 +1970,16 @@
               }
             }
 
-            beginDragSelection(input.wx, input.wy);
+            // If dragging an element, use element-specific drag
+            if (hitType === "element") {
+              drag.active = true;
+              drag.kind = "element";
+              drag.id = hitId;
+              drag.startX = input.wx;
+              drag.startY = input.wy;
+            } else {
+              beginDragSelection(input.wx, input.wy);
+            }
           } else {
             // Clicked on empty space -> Start Selection Box
             if (!e.shiftKey) clearSelection();
@@ -1807,24 +2028,46 @@
           }
         }
 
-        if (mode === Mode.DOOR || mode === Mode.WINDOW) {
-          const hit = nearestWallHit(wx, wy, screenPxToWorld(state.settings.snapRadiusPx));
-          if (!hit) { toast("Click a wall"); return; }
+        if (mode === Mode.ELEMENT) {
+          if (!elemTool.type || !elemTool.sizeM) { toast('Select an element and size first'); return; }
 
-          const tag = {
-            id: uid("t"),
-            type: (mode === Mode.DOOR ? "door" : "window"),
+          const hit = nearestWallHit(wx, wy, screenPxToWorld(state.settings.snapRadiusPx * 2));
+          if (!hit) { toast('Click a wall'); return; }
+
+          const seg = getSeg(hit.segId);
+          if (!seg) return;
+          const A = getPoint(seg.a), B = getPoint(seg.b);
+          if (!A || !B) return;
+
+          const wallLenPx = dist(A.x, A.y, B.x, B.y);
+          const wallLenM = wallLenPx / state.settings.pxPerMeter;
+
+          if (elemTool.sizeM > wallLenM + 0.01) {
+            toast('Element too large for this wall (' + wallLenM.toFixed(1) + 'm)');
+            return;
+          }
+
+          const elemFrac = elemTool.sizeM / wallLenM;
+          const halfFrac = elemFrac / 2;
+          let t = hit.t;
+          // Clamp so element doesn't exceed wall
+          t = clamp(t, halfFrac, 1 - halfFrac);
+
+          const et = ELEMENT_TYPES[elemTool.type];
+          const el = {
+            id: uid('el'),
             segId: hit.segId,
-            t: hit.t,
-            widthM: (mode === Mode.DOOR ? 0.9 : 1.2),
-            swingDeg: 90,
-            side: 1
+            t: t,
+            lengthM: elemTool.sizeM,
+            type: elemTool.type,
+            color: et.color,
+            label: et.label + ' ' + elemTool.sizeM + 'm'
           };
-          state.tags.push(tag);
+          state.elements.push(el);
           clearSelection();
-          selection.ids.add(tag.id);
+          selection.ids.add(el.id);
           commitHistory(true);
-          toast(mode === Mode.DOOR ? "Door placed" : "Window placed");
+          toast(et.label + ' placed (' + elemTool.sizeM + 'm)');
           return;
         }
       }
@@ -1866,6 +2109,25 @@
           else if (drag.kind === "box") {
             drag.currentX = input.wx; // Raw coords
             drag.currentY = input.wy;
+          }
+          else if (drag.kind === "element") {
+            // Slide element along its parent wall
+            const elId = drag.id;
+            const el = state.elements.find(e => e.id === elId);
+            if (el) {
+              const seg = getSeg(el.segId);
+              if (seg) {
+                const A = getPoint(seg.a), B = getPoint(seg.b);
+                if (A && B) {
+                  const { t } = pointOnSegmentDistance(input.wx, input.wy, A, B);
+                  const wallLenPx = dist(A.x, A.y, B.x, B.y);
+                  const wallLenM = wallLenPx / state.settings.pxPerMeter;
+                  const elemFrac = el.lengthM / wallLenM;
+                  const halfFrac = elemFrac / 2;
+                  el.t = clamp(t, halfFrac, 1 - halfFrac);
+                }
+              }
+            }
           }
           else if (drag.kind === "selection") {
             // Delta in world
@@ -2019,8 +2281,6 @@
         if (!ctrlOrCmd) {
           if (e.key === "v" || e.key === "V") setMode(Mode.SELECT);
           if (e.key === "l" || e.key === "L") setMode(Mode.WALL);
-          if (e.key === "d" || e.key === "D") setMode(Mode.DOOR);
-          if (e.key === "w" || e.key === "W") setMode(Mode.WINDOW);
           if (e.key === "0") resetView();
         }
 
@@ -2047,12 +2307,23 @@
             const isSeg = state.segments.find(s => s.id === id);
             const isPt = state.points.find(p => p.id === id);
             const isTag = state.tags.find(t => t.id === id);
+            const isElem = state.elements.find(e => e.id === id);
 
-            if (isSeg) deleteSegment(id);
+            if (isElem) {
+              const idx = state.elements.findIndex(e => e.id === id);
+              if (idx >= 0) state.elements.splice(idx, 1);
+            }
+            else if (isSeg) {
+              // Also remove elements attached to this segment
+              state.elements = state.elements.filter(e => e.segId !== id);
+              deleteSegment(id);
+            }
             else if (isPt) {
-              // Deleting a point deletes connected segments
               const connected = state.segments.filter(s => s.a === id || s.b === id).map(s => s.id);
-              connected.forEach(sid => deleteSegment(sid));
+              connected.forEach(sid => {
+                state.elements = state.elements.filter(e => e.segId !== sid);
+                deleteSegment(sid);
+              });
               const idx = state.points.findIndex(p => p.id === id);
               if (idx >= 0) state.points.splice(idx, 1);
             }
@@ -2066,25 +2337,6 @@
           toast(`Deleted ${deletedCount} items`);
         }
 
-        // Handle shortcuts for SINGLE selected tags
-        if (selection.ids.size === 1) {
-          const id = selection.ids.values().next().value;
-          const tg = state.tags.find(t => t.id === id);
-          if (tg) {
-            if (e.key === "r" || e.key === "R") {
-              tg.swingDeg = (tg.swingDeg === 90 ? 120 : tg.swingDeg === 120 ? 60 : 90);
-              commitHistory(true);
-              toast("Door swing: " + tg.swingDeg + "°");
-            }
-            if (e.key === "f" || e.key === "F") {
-              tg.side *= -1;
-              commitHistory(true);
-              toast("Flip side");
-            }
-            if (e.key === "[") { tg.widthM = clamp(tg.widthM - 0.1, 0.4, 2.4); commitHistory(true); }
-            if (e.key === "]") { tg.widthM = clamp(tg.widthM + 0.1, 0.4, 2.4); commitHistory(true); }
-          }
-        }
       });
 
       window.addEventListener("keyup", (e) => {
@@ -2098,11 +2350,61 @@
       ========================= */
       document.getElementById("toolSelect").onclick = () => setMode(Mode.SELECT);
       document.getElementById("toolLine").onclick = () => setMode(Mode.WALL);
-      document.getElementById("toolDoor").onclick = () => setMode(Mode.DOOR);
-      document.getElementById("toolWindow").onclick = () => setMode(Mode.WINDOW);
 
       document.getElementById("btnUndo").onclick = () => undo();
       document.getElementById("btnRedo").onclick = () => redo();
+
+      /* Element Palette Wiring */
+      const elemSizeSelect = document.getElementById('elemSizeSelect');
+      const elemControlsDiv = document.getElementById('elemControls');
+      const elemActiveLabel = document.getElementById('elemActiveLabel');
+
+      function selectElementType(type) {
+        const et = ELEMENT_TYPES[type];
+        if (!et) return;
+
+        // Update active swatch
+        document.querySelectorAll('.elemSwatch').forEach(s => s.classList.remove('active'));
+        document.querySelector(`.elemSwatch[data-type="${type}"]`).classList.add('active');
+
+        // Populate size dropdown
+        elemSizeSelect.innerHTML = '';
+        et.sizes.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s;
+          opt.textContent = et.label + ' — ' + s + 'm';
+          elemSizeSelect.appendChild(opt);
+        });
+
+        elemTool.type = type;
+        elemTool.sizeM = et.sizes[0];
+        elemControlsDiv.style.display = 'block';
+        elemActiveLabel.innerHTML = `<span class="activeColor" style="background:${et.color}"></span> ${et.label} ${elemTool.sizeM}m`;
+
+        // Switch to element mode
+        mode = Mode.ELEMENT;
+        draw.active = false;
+        draw.lastPointId = null;
+        clearSelection();
+        updateModeUI();
+        toast(et.label + ' tool');
+      }
+
+      elemSizeSelect.onchange = () => {
+        elemTool.sizeM = parseFloat(elemSizeSelect.value);
+        if (elemTool.type) {
+          const et = ELEMENT_TYPES[elemTool.type];
+          elemActiveLabel.innerHTML = `<span class="activeColor" style="background:${et.color}"></span> ${et.label} ${elemTool.sizeM}m`;
+          updateModeUI();
+        }
+      };
+
+      document.querySelectorAll('.elemSwatch').forEach(swatch => {
+        swatch.onclick = (e) => {
+          e.stopPropagation();
+          selectElementType(swatch.dataset.type);
+        };
+      });
 
       function resetView() {
         camera.x = - (window.innerWidth / 2) / camera.scale;
@@ -2116,6 +2418,7 @@
         state.points = [];
         state.segments = [];
         state.tags = [];
+        state.elements = [];
         clearSelection();
         draw.active = false;
         commitHistory(true);
@@ -2219,14 +2522,6 @@
       bindSwitch("swLengths", () => state.settings.showLengths, v => state.settings.showLengths = v, "lengthsVal");
       bindSwitch("swOutline", () => state.settings.outline, v => state.settings.outline = v, "outlineVal");
 
-      const wallWidth = document.getElementById("wallWidth");
-      const wallWidthVal = document.getElementById("wallWidthVal");
-      wallWidth.oninput = () => { state.settings.wallWidth = parseInt(wallWidth.value, 10); wallWidthVal.textContent = wallWidth.value; };
-      wallWidth.onchange = () => commitHistory(true);
-
-      const lineStyle = document.getElementById("lineStyle");
-      lineStyle.onchange = () => { state.settings.pattern = lineStyle.value; commitHistory(true); };
-
       const snapRadius = document.getElementById("snapRadius");
       const snapRadiusVal = document.getElementById("snapRadiusVal");
       snapRadius.oninput = () => { state.settings.snapRadiusPx = parseInt(snapRadius.value, 10); snapRadiusVal.textContent = snapRadius.value; };
@@ -2257,11 +2552,6 @@
         setSw("swAngles", state.settings.showAngles, "anglesVal");
         setSw("swLengths", state.settings.showLengths, "lengthsVal");
         setSw("swOutline", state.settings.outline, "outlineVal");
-
-        wallWidth.value = state.settings.wallWidth;
-        wallWidthVal.textContent = String(state.settings.wallWidth);
-
-        lineStyle.value = state.settings.pattern;
 
         snapRadius.value = state.settings.snapRadiusPx;
         snapRadiusVal.textContent = String(state.settings.snapRadiusPx);
@@ -2345,12 +2635,14 @@
           camera.y = minY;
 
           // Render one frame synchronously
+          state.isExporting = true;
           render();
 
           // 4. Capture Blob
           canvas.toBlob(async (blob) => {
             console.log("Blob captured:", blob);
             // 5. Restore View Immediately (inside callback to ensure blob is captured)
+            state.isExporting = false;
             dpr = saveDpr;
             canvas.width = saveW;
             canvas.height = saveH;
@@ -2362,7 +2654,7 @@
             // 6. Upload
             btn.innerHTML = '<span>Uploading...</span>';
 
-            const fileExt = 'png';
+            const fileExt = 'jpg';
             const fileName = `sketch_${Date.now()}.${fileExt}`;
             const filePath = `${fileName}`;
 
@@ -2371,7 +2663,7 @@
             const { data, error } = await sb.storage
               .from(CONFIG.BUCKET)
               .upload(filePath, blob, {
-                contentType: 'image/png',
+                contentType: 'image/jpeg',
                 upsert: false
               });
 
@@ -2398,10 +2690,11 @@
               window.location.href = redirectUrl;
             }, 500);
 
-          }, 'image/png');
+          }, 'image/jpeg', 0.95);
 
         } catch (err) {
           // Error handling + Restore if failed before blob
+          state.isExporting = false;
           dpr = saveDpr;
           canvas.width = saveW;
           canvas.height = saveH;
